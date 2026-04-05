@@ -1,2 +1,6 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { background: #fff; }
+body {
+  background: #0a0a0a;
+  font-family: 'Inter', sans-serif;
+  color: #fff;
+}
