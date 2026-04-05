@@ -119,7 +119,7 @@ function Hero() {
           <img
             src={nameLogo}
             alt="Glucera"
-            style={{ height: 48, objectFit: "contain" }}
+            style={{ height: 80, objectFit: "contain" }}
           />
         </div>
 
