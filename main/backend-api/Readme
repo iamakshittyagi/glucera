@@ -1,0 +1,124 @@
+# H001 — Backend API
+
+Flask + SocketIO backend for the Hypoglycaemia Risk Intelligence System.
+
+## Setup
+
+```bash
+cd backend-api
+pip install -r requirements.txt
+```
+
+Copy your trained model files from `data-simulator/`:
+```bash
+cp ../data-simulator/model.pkl .
+cp ../data-simulator/scaler.pkl .
+```
+
+> ⚠️ The API works without model files (falls back to rule-based logic),  
+> but you must run `train.py` in `data-simulator/` before deploying for real predictions.
+
+## Run locally
+
+```bash
+python app.py
+```
+
+Server starts on `http://localhost:5000`
+
+---
+
+## API Contract
+
+### POST /predict
+
+Takes a glucose reading history, returns risk level + full context.
+
+**Request**
+```json
+{
+  "glucose": [110, 115, 120, 90, 70]
+}
+```
+
+**Response**
+```json
+{
+  "risk": "high",
+  "confidence": 0.82,
+  "current_glucose": 70,
+  "trend": -40.0,
+  "explanation": "Likely caused by: rapid glucose drop detected, reading below safe threshold (70 mg/dL).",
+  "food_suggestion": "Eat 3 glucose tablets OR drink 150 ml of orange juice immediately.",
+  "safe_to_sleep": "⚠️ Eat a slow-release snack before bed (e.g. peanut butter on toast)."
+}
+```
+
+| `risk`    | `confidence` | Badge  | Action               |
+|-----------|-------------|--------|----------------------|
+| `low`     | 0.00–0.50   | 🟢 Green  | No action needed     |
+| `medium`  | 0.51–0.74   | 🟡 Amber  | Monitor closely      |
+| `high`    | 0.75–1.00   | 🔴 Red    | Fire all alerts      |
+
+---
+
+### GET /glucose
+
+Returns the latest simulated glucose reading.
+
+**Response**
+```json
+{
+  "glucose": 94.3,
+  "timestamp": "2026-01-01T22:00:00.000Z",
+  "unit": "mg/dL"
+}
+```
+
+---
+
+### WebSocket — `glucose_update` event
+
+Connect via `socket.io-client`. Emits every 3 seconds with:
+
+```json
+{
+  "glucose": 94.3,
+  "timestamp": "2026-01-01T22:00:00.000Z",
+  "unit": "mg/dL",
+  "history": [110, 108, 102, 97, 94.3]
+}
+```
+
+**Frontend example:**
+```js
+import { io } from "socket.io-client";
+const socket = io("http://localhost:5000");
+socket.on("glucose_update", (data) => {
+  console.log(data.glucose, data.history);
+});
+```
+
+---
+
+## Deployment (Render)
+
+Push to GitHub, then connect to Render. `render.yaml` is pre-configured.  
+Make sure `model.pkl` and `scaler.pkl` are committed to the repo before deploying.
+
+---
+
+## File Structure
+
+```
+backend-api/
+├── app.py              Flask entry point + SocketIO + route registration
+├── glucose_stream.py   Background simulator + WebSocket emitter
+├── routes/
+│   ├── predict.py      POST /predict — ML prediction + explanation
+│   └── glucose.py      GET /glucose  — latest reading
+├── model.pkl           ← copy from data-simulator/ after training
+├── scaler.pkl          ← copy from data-simulator/ after training
+├── requirements.txt
+└── render.yaml         Render deployment config
+```
