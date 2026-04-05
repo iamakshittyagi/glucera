@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import nameLogo from "./assets/name_logo.png";
+import nameLogo from "../assets/name_logo.png";
 
 /* ─── BEAT LOADER ────────────────────────────────────────────────── */
 function BeatLoader({ onComplete }) {
