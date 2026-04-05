@@ -1,9 +1,8 @@
-flask==3.0.3
-flask-cors==4.0.1
-flask-socketio==5.3.6
-xgboost==2.0.3
-scikit-learn==1.4.2
-pandas==2.2.2
-numpy==1.26.4
-gunicorn==22.0.0
-eventlet==0.35.2
+flask
+flask-cors
+flask-socketio
+xgboost
+scikit-learn
+pandas
+numpy
+gunicorn
