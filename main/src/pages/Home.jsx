@@ -1,8 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-
-// ⚠️ Copy these files into your /public folder:
-//    name_logo.png  →  /public/name_logo.png
-//    favicon.png    →  /public/favicon.png
+import nameLogo from "./assets/name_logo.png";
 
 /* ─── BEAT LOADER ────────────────────────────────────────────────── */
 function BeatLoader({ onComplete }) {
@@ -120,7 +117,7 @@ function Hero() {
         {/* Logo */}
         <div className="a1">
           <img
-            src="/name_logo.png"
+            src={nameLogo}
             alt="Glucera"
             style={{ height: 48, objectFit: "contain" }}
           />
