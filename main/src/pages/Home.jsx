@@ -140,7 +140,7 @@ function Hero() {
           letterSpacing: "-0.03em",
           lineHeight: 1.1,
         }}>
-          April 6 · 18:00 IST
+          April 6, 2026
         </h1>
 
         <p className="a3" style={{
