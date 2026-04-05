@@ -1,5 +1,9 @@
 import { useState, useEffect, useCallback } from "react";
 
+// ⚠️ Copy these files into your /public folder:
+//    name_logo.png  →  /public/name_logo.png
+//    favicon.png    →  /public/favicon.png
+
 /* ─── BEAT LOADER ────────────────────────────────────────────────── */
 function BeatLoader({ onComplete }) {
   const [progress, setProgress] = useState(0);
@@ -48,7 +52,6 @@ function BeatLoader({ onComplete }) {
           }}
         />
 
-        {/* Progress bar */}
         <div style={{
           width: 140, height: 2,
           background: "#F0EAEB",
@@ -114,16 +117,15 @@ function Hero() {
         gap: "1.2rem",
       }}>
 
-        {/* Logo from assets */}
+        {/* Logo */}
         <div className="a1">
           <img
-            src="/assets/name_logo.png"
+            src="/name_logo.png"
             alt="Glucera"
             style={{ height: 48, objectFit: "contain" }}
           />
         </div>
 
-        {/* Tag */}
         <p className="a2" style={{
           fontSize: "0.72rem",
           fontWeight: 500,
@@ -134,7 +136,6 @@ function Hero() {
           Coming Soon
         </p>
 
-        {/* Date */}
         <h1 className="a3" style={{
           fontSize: "clamp(2rem, 6vw, 3.6rem)",
           fontWeight: 700,
@@ -153,7 +154,6 @@ function Hero() {
           Mark your calendar. Something good is on the way.
         </p>
 
-        {/* Divider */}
         <div className="a4" style={{
           width: 40, height: 1.5,
           background: "linear-gradient(90deg, #fff, #76575D, #fff)",
@@ -161,7 +161,6 @@ function Hero() {
           marginTop: "0.8rem",
         }} />
 
-        {/* Blink dots */}
         <div className="a4" style={{ display: "flex", gap: "0.35rem" }}>
           {[0, 1, 2].map((i) => (
             <div key={i} style={{
