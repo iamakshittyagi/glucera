@@ -20,4 +20,4 @@ stream_thread = threading.Thread(target=start_stream, daemon=True)
 stream_thread.start()
 
 if __name__ == "__main__":
-    socketio.run(app, host="0.0.0.0", port=8000, debug=False, use_reloader=False)
+    socketio.run(app, host="0.0.0.0", port=8000, debug=False, use_reloader=False, allow_unsafe_werkzeug=True)
