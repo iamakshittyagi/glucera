@@ -12,12 +12,13 @@ const firebaseConfig = {
 };
 
 const VAPID_KEY = "BNlBCMrBhiOY5R6fNgERyhQeEFaI_WgEuLVFE-QkO1WBvtGAJvWKoa-ymTvvTDpF_k8zb9TDt3dv2U17NGVl6jk";
+const API_URL   = "https://glucera.onrender.com";
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+const app       = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
-// Request permission + get FCM token
+// ─── REQUEST PERMISSION + GET FCM TOKEN + REGISTER WITH BACKEND ──
 export async function requestNotificationPermission() {
   try {
     const permission = await Notification.requestPermission();
@@ -25,10 +26,28 @@ export async function requestNotificationPermission() {
       console.warn("Notification permission denied");
       return null;
     }
+
     const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+
     if (token) {
       console.log("FCM Token:", token);
+
+      // Save locally
       localStorage.setItem("caregiver_token", token);
+
+      // Send to backend so Render can push alerts to this device
+      try {
+        const res = await fetch(`${API_URL}/register-caregiver`, {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ token }),
+        });
+        const data = await res.json();
+        console.log("Caregiver registered on backend:", data);
+      } catch (err) {
+        console.warn("Could not register token with backend:", err);
+      }
+
       return token;
     } else {
       console.warn("No FCM token received");
@@ -40,7 +59,7 @@ export async function requestNotificationPermission() {
   }
 }
 
-// Listen for foreground messages
+// ─── LISTEN FOR FOREGROUND MESSAGES ──────────────────────────────
 export function onForegroundMessage(callback) {
   return onMessage(messaging, (payload) => {
     console.log("Foreground message:", payload);
