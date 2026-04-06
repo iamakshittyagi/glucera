@@ -5,18 +5,25 @@ import Navbar from "../components/Navbar";
 const API_URL = "https://glucera.onrender.com";
 
 export default function Caregiver() {
-  const [status, setStatus]       = useState("watching");
-  const [alert, setAlert]         = useState(null);
+  const [status,    setStatus]    = useState("watching");
+  const [alert,     setAlert]     = useState(null);
   const [connected, setConnected] = useState(false);
   const socketRef = useRef(null);
 
   useEffect(() => {
-    // Request browser notification permission
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
 
-    // Connect to WebSocket
+    // ── Fetch current state on load (REST fallback) ───────────────
+    fetch(`${API_URL}/latest-alert`)
+      .then((r) => r.json())
+      .then((data) => {
+        applyAlert(data);
+      })
+      .catch(() => {});
+
+    // ── Connect WebSocket ─────────────────────────────────────────
     const socket = io(API_URL, { transports: ["websocket"] });
     socketRef.current = socket;
 
@@ -28,47 +35,70 @@ export default function Caregiver() {
     socket.on("disconnect", () => setConnected(false));
 
     socket.on("alert_update", (data) => {
-      setAlert(data);
-      setStatus(data.risk === "high" ? "alert" : data.risk === "medium" ? "medium" : "safe");
-
-      if (data.risk === "high") {
-        // Browser notification
-        if (Notification.permission === "granted") {
-          new Notification("🚨 Glucera Emergency", {
-            body: `Patient glucose: ${data.glucose} mg/dL — CRITICAL. Immediate action needed.`,
-            icon: "/favicon.png",
-            requireInteraction: true,
-          });
-        }
-        // Voice alert
-        if ("speechSynthesis" in window) {
-          window.speechSynthesis.cancel();
-          const msg = new SpeechSynthesisUtterance(
-            `Emergency. Patient glucose is critically low at ${data.glucose} milligrams per deciliter. Immediate response required.`
-          );
-          msg.rate = 0.9;
-          msg.volume = 1.0;
-          window.speechSynthesis.speak(msg);
-        }
-      }
+      applyAlert(data);
     });
 
     return () => socket.disconnect();
   }, []);
 
-  const cfg = {
-    watching: { color: "#76575D", bg: "#f9f5f5", icon: "", label: "Monitoring Patient"  },
-    safe:     { color: "#27ae60", bg: "#f0faf4", icon: "", label: "Patient is Safe"      },
-    medium:   { color: "#e67e22", bg: "#fef9f0", icon: "", label: "Caution"             },
-    alert:    { color: "#c0392b", bg: "#fdf0ef", icon: "", label: "EMERGENCY"           },
-  }[status];
+  function applyAlert(data) {
+    setAlert(data);
+
+    if (data.risk === "high") {
+      setStatus("alert");
+      fireAlerts(data);
+    } else if (data.risk === "medium") {
+      setStatus("medium");
+    } else {
+      // low or null — patient is safe / recovered
+      setStatus(data.glucose ? "safe" : "watching");
+    }
+  }
+
+  function fireAlerts(data) {
+    if (Notification.permission === "granted") {
+      new Notification("🚨 Glucera Emergency", {
+        body: `Patient glucose: ${data.glucose} mg/dL — CRITICAL. Immediate action needed.`,
+        icon: "/favicon.png",
+        requireInteraction: true,
+      });
+    }
+    if ("speechSynthesis" in window) {
+      window.speechSynthesis.cancel();
+      const msg = new SpeechSynthesisUtterance(
+        `Emergency. Patient glucose is critically low at ${data.glucose} milligrams per deciliter. Immediate response required.`
+      );
+      msg.rate = 0.9;
+      msg.volume = 1.0;
+      window.speechSynthesis.speak(msg);
+    }
+  }
+
+  // ── Manual reset button ───────────────────────────────────────
+  async function handleReset() {
+    try {
+      await fetch(`${API_URL}/reset-alert`, { method: "POST" });
+    } catch {
+      // optimistic reset even if backend unreachable
+    }
+    setStatus("safe");
+    setAlert({ risk: "low", glucose: null, timestamp: new Date().toLocaleTimeString(), message: "Manually marked as safe." });
+  }
+
+  const cfgMap = {
+    watching: { color: "#76575D", bg: "#f9f5f5", icon: "👁️", label: "Monitoring Patient"  },
+    safe:     { color: "#27ae60", bg: "#f0faf4", icon: "✅", label: "Patient is Safe"      },
+    medium:   { color: "#e67e22", bg: "#fef9f0", icon: "⚠️", label: "Caution"             },
+    alert:    { color: "#c0392b", bg: "#fdf0ef", icon: "🚨", label: "EMERGENCY"           },
+  };
+  const cfg = cfgMap[status] || cfgMap.watching;
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0eaeb", fontFamily: "DM Sans, sans-serif" }}>
       <Navbar />
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 20px" }}>
 
-        {/* Status card */}
+        {/* ── STATUS CARD ── */}
         <div style={{
           background: cfg.bg,
           border: `2px solid ${cfg.color}`,
@@ -105,9 +135,29 @@ export default function Caregiver() {
               )}
             </div>
           )}
+
+          {/* ── Mark as safe button (shown after alert) ── */}
+          {(status === "alert" || status === "medium") && (
+            <button
+              onClick={handleReset}
+              style={{
+                marginTop: 20,
+                background: "#27ae60",
+                color: "#fff",
+                border: "none",
+                borderRadius: 12,
+                padding: "12px 28px",
+                fontSize: 15,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              ✓ Mark Patient as Safe
+            </button>
+          )}
         </div>
 
-        {/* Connection status */}
+        {/* ── CONNECTION STATUS ── */}
         <div style={{
           background: "#fff",
           borderRadius: 16,
