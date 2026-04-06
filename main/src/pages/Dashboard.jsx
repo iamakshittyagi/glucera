@@ -31,7 +31,6 @@ function speakAlert(riskLevel) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
 
-  // High risk — say this for 3 seconds then stop
   const msg = "Your sugar level is getting drop.";
 
   const utterance  = new SpeechSynthesisUtterance(msg);
@@ -40,7 +39,6 @@ function speakAlert(riskLevel) {
   utterance.volume = 1.0;
 
   if (riskLevel === "high") {
-    // Stop speaking after 3 seconds
     window.speechSynthesis.speak(utterance);
     setTimeout(() => window.speechSynthesis.cancel(), 3000);
   } else {
@@ -172,7 +170,7 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
             </span>
             <span className="popup-stat-label">mg/dL now</span>
           </div>
-          {prediction.crash_in_minutes && (
+          {prediction.crash_in_minutes && prediction.crash_in_minutes > 0 && (
             <div className="popup-stat">
               <span className="popup-stat-val" style={{ color: "#c0392b" }}>
                 ~{prediction.crash_in_minutes}
@@ -180,7 +178,7 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
               <span className="popup-stat-label">min to crash</span>
             </div>
           )}
-          {prediction.estimated_floor && (
+          {prediction.estimated_floor && prediction.estimated_floor > 0 && (
             <div className="popup-stat">
               <span className="popup-stat-val" style={{ color: "#e67e22" }}>
                 {prediction.estimated_floor}
@@ -219,9 +217,6 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
           </button>
         </div>
 
-        <p className="popup-confidence">
-          AI confidence: <strong>{Math.round(prediction.confidence * 100)}%</strong>
-        </p>
       </div>
     </div>
   );
@@ -423,7 +418,6 @@ export default function Dashboard() {
   const updateCtx = (key, val) => setCtx((prev) => ({ ...prev, [key]: val }));
 
   const risk             = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
-  const confidencePct    = prediction ? Math.round(prediction.confidence * 100) : null;
   const recentReadings   = rows.slice(-20);
   const countdownDisplay = countdown !== null
     ? `${String(Math.floor(countdown / 60)).padStart(2, "0")}:${String(countdown % 60).padStart(2, "0")}`
@@ -517,7 +511,7 @@ export default function Dashboard() {
 
                 {/* ── CONTEXT PANEL ── */}
                 {showPanel && prediction?.risk !== "high" && (
-                    <div className="context-panel">
+                  <div className="context-panel">
                     <p className="context-panel-title">Clinical Context — fills your risk score</p>
                     <div className="context-grid">
 
@@ -610,11 +604,8 @@ export default function Dashboard() {
                       <p className="risk-glucose">
                         Last reading: <strong>{prediction.current_glucose} mg/dL</strong>
                       </p>
-                      <p className="risk-confidence" style={{ color: risk.color }}>
-                        AI confidence: <strong>{confidencePct}%</strong>
-                      </p>
 
-                      {prediction.crash_predicted && prediction.crash_in_minutes && (
+                      {prediction.crash_predicted && prediction.crash_in_minutes && prediction.crash_in_minutes > 0 && (
                         <div className="crash-prediction-box" style={{ borderColor: risk.color }}>
                           <p className="crash-prediction-label" style={{ color: risk.color }}>
                             Crash predicted in
@@ -622,7 +613,7 @@ export default function Dashboard() {
                           <p className="crash-prediction-time" style={{ color: risk.color }}>
                             ~{prediction.crash_in_minutes} min
                           </p>
-                          {prediction.estimated_floor && (
+                          {prediction.estimated_floor && prediction.estimated_floor > 0 && (
                             <p className="crash-prediction-floor">
                               Estimated floor: <strong>{prediction.estimated_floor} mg/dL</strong>
                             </p>
@@ -670,7 +661,7 @@ export default function Dashboard() {
                             </strong>
                           </li>
                         )}
-                        {prediction.estimated_floor && (
+                        {prediction.estimated_floor && prediction.estimated_floor > 0 && (
                           <li className="explain-item">
                             <span className="explain-dot" style={{ background: "#e67e22" }} />
                             Projected glucose floor:
@@ -783,15 +774,15 @@ export default function Dashboard() {
                       </div>
                       <div className="stat-card">
                         <p className="stat-val" style={{ color: prediction.crash_predicted ? "#c0392b" : undefined }}>
-                          {prediction.crash_in_minutes ?? "—"}
-                          <span>{prediction.crash_in_minutes ? " min" : ""}</span>
+                          {prediction.crash_in_minutes && prediction.crash_in_minutes > 0 ? prediction.crash_in_minutes : "—"}
+                          <span>{prediction.crash_in_minutes && prediction.crash_in_minutes > 0 ? " min" : ""}</span>
                         </p>
                         <p className="stat-label">crash prediction</p>
                       </div>
                       <div className="stat-card">
                         <p className="stat-val">
-                          {prediction.estimated_floor ?? "—"}
-                          <span>{prediction.estimated_floor ? " mg" : ""}</span>
+                          {prediction.estimated_floor && prediction.estimated_floor > 0 ? prediction.estimated_floor : "—"}
+                          <span>{prediction.estimated_floor && prediction.estimated_floor > 0 ? " mg" : ""}</span>
                         </p>
                         <p className="stat-label">glucose floor</p>
                       </div>
@@ -810,7 +801,6 @@ export default function Dashboard() {
 
             {loading && !prediction && (
               <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
-                <p style={{ fontSize: "2rem", marginBottom: 12 }}>...</p>
                 <p style={{ color: "#76575D", fontWeight: 600 }}>Analysing your glucose data</p>
                 <p style={{ color: "#aaa", fontSize: "0.85rem" }}>Connecting to Glucera AI backend</p>
               </div>
