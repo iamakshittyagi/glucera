@@ -63,7 +63,7 @@ export default function HowItWorks() {
                 <div className="hiw-step-line" />
               </div>
               <div className="hiw-step-right">
-                <span className="hiw-step-icon">{s.icon}</span>
+                <img className="hiw-step-icon" src={s.icon} alt={s.title} />
                 <h3 className="hiw-step-title">{s.title}</h3>
                 <p className="hiw-step-desc">{s.desc}</p>
               </div>
