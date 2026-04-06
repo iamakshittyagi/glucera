@@ -148,6 +148,11 @@
   margin-bottom: 8px;
 }
 
+.risk-confidence {
+  font-size: 0.88rem;
+  margin-bottom: 4px;
+}
+
 .risk-prediction {
   font-size: 0.88rem;
   margin-top: 8px;
@@ -269,13 +274,35 @@
   max-width: 160px;
 }
 
+.sos-countdown {
+  text-align: center;
+}
+
+.sos-countdown-label {
+  font-size: 0.72rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.sos-countdown-timer {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #c0392b;
+}
+
+.sos-countdown-hint {
+  font-size: 0.72rem;
+  color: #aaa;
+}
+
 /* ── CHART CARD ── */
 .chart-card { margin-bottom: 16px; }
 
 /* ── STATS ROW ── */
 .stats-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 12px;
 }
 
@@ -309,6 +336,194 @@
   letter-spacing: 1px;
 }
 
+/* ── CLINICAL RISK BAR ── */
+.clinical-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  background: #fff;
+  border-radius: 14px;
+  padding: 14px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  flex-wrap: wrap;
+}
+
+.clinical-bar-left {
+  display: flex;
+  flex-direction: column;
+  min-width: 120px;
+}
+
+.clinical-score-label {
+  font-size: 11px;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.clinical-score-val {
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.clinical-score-val span { font-size: 14px; color: #aaa; }
+
+.clinical-track {
+  flex: 1;
+  height: 10px;
+  background: #f0e8e8;
+  border-radius: 99px;
+  overflow: hidden;
+  min-width: 100px;
+}
+
+.clinical-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width 0.6s ease;
+}
+
+.context-toggle {
+  background: #76575D;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.context-toggle:hover { background: #5a4045; }
+
+/* ── CONTEXT PANEL ── */
+.context-panel {
+  background: #fff;
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.context-panel-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #76575D;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.context-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.ctx-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ctx-label {
+  font-size: 12px;
+  color: #666;
+  font-weight: 500;
+}
+
+.ctx-stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ctx-stepper button {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1.5px solid #ddd;
+  background: #f9f5f5;
+  font-size: 16px;
+  cursor: pointer;
+  font-weight: 700;
+  color: #76575D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.ctx-stepper button:hover { background: #f0e8e8; }
+
+.ctx-stepper span {
+  font-size: 15px;
+  font-weight: 700;
+  color: #333;
+  min-width: 36px;
+  text-align: center;
+}
+
+.ctx-slider {
+  width: 100%;
+  accent-color: #76575D;
+}
+
+.ctx-slider-val {
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.ctx-number {
+  width: 100%;
+  padding: 7px 10px;
+  border: 1.5px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  outline: none;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.ctx-number:focus { border-color: #76575D; }
+
+.ctx-toggle-item { justify-content: space-between; }
+
+.ctx-toggle-btn {
+  padding: 7px 18px;
+  border-radius: 8px;
+  border: 1.5px solid #ddd;
+  background: #f9f5f5;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  color: #666;
+  transition: all 0.2s;
+  font-family: 'DM Sans', sans-serif;
+}
+
+.ctx-toggle-btn.active {
+  background: #fdf0ef;
+  border-color: #c0392b;
+  color: #c0392b;
+}
+
+.ctx-warning {
+  font-size: 11px;
+  color: #e67e22;
+  font-weight: 600;
+}
+
+/* ── DRIVER POINTS ── */
+.driver-pts {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 700;
+}
+
 /* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
   .dash-grid {
@@ -324,4 +539,5 @@
 @media (max-width: 600px) {
   .dash-container { padding: 10px 12px 24px; }
   .stats-row { grid-template-columns: 1fr 1fr; }
+  .context-grid { grid-template-columns: 1fr; }
 }
