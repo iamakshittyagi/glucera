@@ -32,9 +32,7 @@ function speakAlert(riskLevel) {
   window.speechSynthesis.cancel();
 
   // High risk — say this for 3 seconds then stop
-  const msg = riskLevel === "high"
-    ? "Your blood sugar level is dropping."
-    : "Caution. Your glucose is getting low. Consider having a small snack.";
+  const msg = "Your sugar level is getting drop.";
 
   const utterance  = new SpeechSynthesisUtterance(msg);
   utterance.rate   = 0.85;
