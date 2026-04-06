@@ -426,7 +426,7 @@ export default function Dashboard() {
 
                   {/* Hypo episodes */}
                   <div className="ctx-item">
-                    <label className="ctx-label">🔴 Hypo Episodes (last 7 days)</label>
+                    <label className="ctx-label">Hypo Episodes (last 7 days)</label>
                     <div className="ctx-stepper">
                       <button onClick={() => updateCtx("hypoEpisodes", Math.max(0, ctx.hypoEpisodes - 1))}>−</button>
                       <span>{ctx.hypoEpisodes}</span>
@@ -444,22 +444,10 @@ export default function Dashboard() {
                     </div>
                   </div>
 
-                  {/* Hours since exercise */}
-                  <div className="ctx-item">
-                    <label className="ctx-label">🏃 Hours Since Exercise</label>
-                    <div className="ctx-stepper">
-                      <button onClick={() => updateCtx("hoursSinceExercise", Math.max(0, ctx.hoursSinceExercise - 1))}>−</button>
-                      <span>{ctx.hoursSinceExercise}h</span>
-                      <button onClick={() => updateCtx("hoursSinceExercise", Math.min(24, ctx.hoursSinceExercise + 1))}>+</button>
-                    </div>
-                    {ctx.hoursSinceExercise >= 4 && ctx.hoursSinceExercise <= 8 && (
-                      <p className="ctx-warning">⚠️ Peak post-exercise hypo window</p>
-                    )}
-                  </div>
 
                   {/* Sleep hours */}
                   <div className="ctx-item">
-                    <label className="ctx-label">😴 Sleep Last Night (hours)</label>
+                    <label className="ctx-label"> Sleep Last Night (hours)</label>
                     <input
                       className="ctx-slider"
                       type="range" min="0" max="12" step="0.5"
@@ -471,7 +459,7 @@ export default function Dashboard() {
 
                   {/* Stress level */}
                   <div className="ctx-item">
-                    <label className="ctx-label">🧠 Stress Level</label>
+                    <label className="ctx-label">Stress Level</label>
                     <input
                       className="ctx-slider"
                       type="range" min="1" max="10" step="1"
@@ -483,7 +471,7 @@ export default function Dashboard() {
 
                   {/* Heart rate override */}
                   <div className="ctx-item">
-                    <label className="ctx-label">❤️ Heart Rate (bpm)</label>
+                    <label className="ctx-label">Heart Rate (bpm)</label>
                     <input
                       className="ctx-number"
                       type="number" min="40" max="200"
@@ -495,7 +483,7 @@ export default function Dashboard() {
 
                   {/* Skipped meal toggle */}
                   <div className="ctx-item ctx-toggle-item">
-                    <label className="ctx-label">🍽️ Insulin taken, no meal followed?</label>
+                    <label className="ctx-label">Insulin taken, no meal followed?</label>
                     <button
                       className={`ctx-toggle-btn ${ctx.skippedMeal ? "active" : ""}`}
                       onClick={() => updateCtx("skippedMeal", !ctx.skippedMeal)}
@@ -506,12 +494,12 @@ export default function Dashboard() {
 
                   {/* Alcohol toggle */}
                   <div className="ctx-item ctx-toggle-item">
-                    <label className="ctx-label">🍺 Alcohol consumed today?</label>
+                    <label className="ctx-label">Alcohol consumed today?</label>
                     <button
                       className={`ctx-toggle-btn ${ctx.alcoholConsumed ? "active" : ""}`}
                       onClick={() => updateCtx("alcoholConsumed", !ctx.alcoholConsumed)}
                     >
-                      {ctx.alcoholConsumed ? "YES ⚠️" : "NO"}
+                      {ctx.alcoholConsumed ? "YES " : "NO"}
                     </button>
                   </div>
 
@@ -572,7 +560,7 @@ export default function Dashboard() {
 
                 {/* Food suggestion */}
                 <div className="card food-card">
-                  <p className="card-label">🍊 Food Suggestion</p>
+                  <p className="card-label"> Food Suggestion</p>
                   <p className="food-text">"{analysis.foodSuggestion}"</p>
                 </div>
 
