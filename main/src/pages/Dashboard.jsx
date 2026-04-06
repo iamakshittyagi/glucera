@@ -30,15 +30,22 @@ function sendPushNotification(riskLevel, confidence) {
 function speakAlert(riskLevel) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
-  const msg =
-    riskLevel === "high"
-      ? "Warning. Your glucose is dropping dangerously. Please eat something immediately."
-      : "Caution. Your glucose is getting low. Consider having a small snack.";
-  const utterance = new SpeechSynthesisUtterance(msg);
-  utterance.rate  = 0.9;
-  utterance.pitch = 1.0;
+
+  // High risk — say this for 3 seconds then stop
+  const msg = "Your sugar level is getting drop.";
+
+  const utterance  = new SpeechSynthesisUtterance(msg);
+  utterance.rate   = 0.85;
+  utterance.pitch  = 1.0;
   utterance.volume = 1.0;
-  window.speechSynthesis.speak(utterance);
+
+  if (riskLevel === "high") {
+    // Stop speaking after 3 seconds
+    window.speechSynthesis.speak(utterance);
+    setTimeout(() => window.speechSynthesis.cancel(), 3000);
+  } else {
+    window.speechSynthesis.speak(utterance);
+  }
 }
 
 async function sendSOSToBackend(trigger, coords) {
@@ -135,8 +142,6 @@ const defaultCtx = {
 
 // ─────────────────────────────────────────────────────────────────
 // CRASH WARNING POPUP
-// Shows when risk = high. Counts down 3 seconds, then fires SOS.
-// Patient can hit "I'm OK" to dismiss and cancel SOS.
 // ─────────────────────────────────────────────────────────────────
 function CrashPopup({ prediction, onDismiss, onSOS }) {
   const [tick, setTick] = useState(3);
@@ -154,9 +159,8 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
     <div className="popup-overlay">
       <div className="popup-box">
 
-        {/* Pulsing danger icon */}
         <div className="popup-icon-ring">
-          <span className="popup-icon">⚠️</span>
+          <span className="popup-icon">!</span>
         </div>
 
         <h2 className="popup-title">Glucose Crash Predicted</h2>
@@ -188,7 +192,6 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
 
         <p className="popup-suggestion">{prediction.food_suggestion}</p>
 
-        {/* Countdown ring */}
         <div className="popup-countdown-wrap">
           <svg className="popup-countdown-svg" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="34" fill="none" stroke="#f0e8e8" strokeWidth="6" />
@@ -207,13 +210,12 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
         </div>
         <p className="popup-countdown-label">SOS fires in {tick} second{tick !== 1 ? "s" : ""}</p>
 
-        {/* Action buttons */}
         <div className="popup-actions">
           <button className="popup-btn-dismiss" onClick={onDismiss}>
-            ✓ I'm OK — Cancel SOS
+            I'm OK — Cancel SOS
           </button>
           <button className="popup-btn-sos" onClick={onSOS}>
-            🚨 Send SOS Now
+            Send SOS Now
           </button>
         </div>
 
@@ -239,7 +241,7 @@ export default function Dashboard() {
   const [dragging,    setDragging]    = useState(false);
   const [apiError,    setApiError]    = useState(null);
   const [showPopup,   setShowPopup]   = useState(false);
-  const [popupShown,  setPopupShown]  = useState(false); // only show once per risk event
+  const [popupShown,  setPopupShown]  = useState(false);
 
   const autoSosTimer      = useRef(null);
   const countdownInterval = useRef(null);
@@ -258,12 +260,12 @@ export default function Dashboard() {
     setApiError(null);
 
     try {
-      const glucoseArray   = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
-      const mealArray      = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
-      const exerciseArray  = csvRows.map((r) => (parseFloat(r.exercise_minutes) > 0 ? 1 : 0));
-      const lastRow        = csvRows[csvRows.length - 1];
-      const csvHeartRate   = parseFloat(lastRow?.heart_rate);
-      const heartRate      = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
+      const glucoseArray  = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
+      const mealArray     = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
+      const exerciseArray = csvRows.map((r) => (parseFloat(r.exercise_minutes) > 0 ? 1 : 0));
+      const lastRow       = csvRows[csvRows.length - 1];
+      const csvHeartRate  = parseFloat(lastRow?.heart_rate);
+      const heartRate     = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
 
       const payload = {
         glucose:          glucoseArray,
@@ -288,7 +290,6 @@ export default function Dashboard() {
       const result = await res.json();
       setPrediction(result);
 
-      // Show popup ONLY when risk transitions to high for the first time
       if (result.risk === "high" && prevRisk.current !== "high") {
         setShowPopup(true);
         setPopupShown(true);
@@ -308,22 +309,22 @@ export default function Dashboard() {
       const rate         = glucoseArray.length >= 2
         ? (glucoseArray[glucoseArray.length - 1] - glucoseArray[glucoseArray.length - 2]) / 15
         : 0;
-      const tth = rate < 0 ? Math.min(120, (current - 70) / Math.abs(rate)) : null;
+      const tth  = rate < 0 ? Math.min(120, (current - 70) / Math.abs(rate)) : null;
       const risk = current < 70 ? "high" : current < 85 ? "medium" : "low";
 
       const fallback = {
         risk,
-        confidence:         current < 70 ? 0.88 : 0.65,
-        current_glucose:    current,
-        trend:              Math.round(rate * 60),
-        crash_predicted:    tth !== null && tth < 60,
-        crash_in_minutes:   tth ? Math.round(tth) : null,
-        estimated_floor:    Math.round(current + rate * 30),
-        food_suggestion:    current < 70
-          ? "Eat 3 glucose tablets or drink 150ml of juice IMMEDIATELY."
+        confidence:          current < 70 ? 0.88 : 0.65,
+        current_glucose:     current,
+        trend:               Math.round(rate * 60),
+        crash_predicted:     tth !== null && tth < 60,
+        crash_in_minutes:    tth ? Math.round(tth) : null,
+        estimated_floor:     Math.round(current + rate * 30),
+        food_suggestion:     current < 70
+          ? "Eat 3 glucose tablets or drink 150ml of juice immediately."
           : current < 90
           ? "Have a small snack — a banana or handful of crackers."
-          : "Glucose looks stable. Keep up your current routine!",
+          : "Glucose looks stable. Keep up your current routine.",
         class_probabilities: {},
       };
       setPrediction(fallback);
@@ -338,12 +339,11 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Re-call backend when context changes
   useEffect(() => {
     if (rows.length >= 2) callBackend(rows, ctx);
   }, [ctx]); // eslint-disable-line
 
-  // ─── SOS COUNTDOWN (post-popup, after patient dismisses) ───────
+  // ─── SOS COUNTDOWN ─────────────────────────────────────────────
   useEffect(() => {
     clearTimeout(autoSosTimer.current);
     clearInterval(countdownInterval.current);
@@ -396,11 +396,9 @@ export default function Dashboard() {
     handleFile(e.dataTransfer.files[0]);
   }, [handleFile]);
 
-  // ─── POPUP HANDLERS ────────────────────────────────────────────
   function handlePopupDismiss() {
-    // Patient says they're OK — close popup, don't fire SOS
     setShowPopup(false);
-    setSosSent(false); // reset so the dashboard SOS button still works
+    setSosSent(false);
   }
 
   function handlePopupSOS() {
@@ -424,10 +422,9 @@ export default function Dashboard() {
 
   const updateCtx = (key, val) => setCtx((prev) => ({ ...prev, [key]: val }));
 
-  // ─── DERIVED VALUES ─────────────────────────────────────────────
-  const risk          = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
-  const confidencePct = prediction ? Math.round(prediction.confidence * 100) : null;
-  const recentReadings = rows.slice(-20);
+  const risk             = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
+  const confidencePct    = prediction ? Math.round(prediction.confidence * 100) : null;
+  const recentReadings   = rows.slice(-20);
   const countdownDisplay = countdown !== null
     ? `${String(Math.floor(countdown / 60)).padStart(2, "0")}:${String(countdown % 60).padStart(2, "0")}`
     : null;
@@ -443,7 +440,6 @@ export default function Dashboard() {
     <div className="dash-page">
       <Navbar />
 
-      {/* ── CRASH WARNING POPUP ── */}
       {showPopup && prediction && (
         <CrashPopup
           prediction={prediction}
@@ -462,9 +458,11 @@ export default function Dashboard() {
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
           >
-            <div className="upload-icon">📂</div>
+            <div className="upload-icon">
+              <img src={FileIcon} alt="file" style={{ width: 100, height: 100, objectFit: "contain" }} />
+            </div>
             <h2 className="upload-title">Upload Your CGM Data</h2>
-            <p className="upload-sub">Drag & drop your CSV file here, or click to browse</p>
+            <p className="upload-sub">Drag and drop your CSV file here, or click to browse</p>
             <label className="upload-btn">
               Choose File
               <input type="file" accept=".csv" hidden onChange={(e) => handleFile(e.target.files[0])} />
@@ -478,13 +476,12 @@ export default function Dashboard() {
         {/* ── RESULTS ── */}
         {data && (
           <>
-            {/* Top bar */}
             <div className="dash-topbar">
               <div className="dash-file-info">
                 <img src={FileIcon} alt="file" className="dash-file-icon" style={{ width: 20, height: 20, objectFit: "contain" }} />
                 <span className="dash-file-name">{fileName}</span>
-                {loading && <span className="dash-loading-pill">⏳ Analysing…</span>}
-                {apiError && <span className="dash-error-pill">⚠️ {apiError}</span>}
+                {loading && <span className="dash-loading-pill">Analysing...</span>}
+                {apiError && <span className="dash-error-pill">{apiError}</span>}
               </div>
               <label className="dash-reupload">
                 Upload New File
@@ -511,19 +508,21 @@ export default function Dashboard() {
                       }}
                     />
                   </div>
-                  <button className="context-toggle" onClick={() => setShowPanel((p) => !p)}>
-                    {showPanel ? "Hide Context Panel ↑" : "Add Clinical Context ↓"}
-                  </button>
+                  {prediction?.risk !== "high" && (
+                    <button className="context-toggle" onClick={() => setShowPanel((p) => !p)}>
+                      {showPanel ? "Hide Context Panel" : "Add Clinical Context"}
+                    </button>
+                  )}
                 </div>
 
-                {/* ── CONTEXT INPUT PANEL ── */}
-                {showPanel && (
-                  <div className="context-panel">
+                {/* ── CONTEXT PANEL ── */}
+                {showPanel && prediction?.risk !== "high" && (
+                    <div className="context-panel">
                     <p className="context-panel-title">Clinical Context — fills your risk score</p>
                     <div className="context-grid">
 
                       <div className="ctx-item">
-                        <label className="ctx-label">🔴 Hypo Episodes (last 7 days)</label>
+                        <label className="ctx-label">Hypo Episodes (last 7 days)</label>
                         <div className="ctx-stepper">
                           <button onClick={() => updateCtx("hypoEpisodes", Math.max(0, ctx.hypoEpisodes - 1))}>−</button>
                           <span>{ctx.hypoEpisodes}</span>
@@ -532,7 +531,7 @@ export default function Dashboard() {
                       </div>
 
                       <div className="ctx-item">
-                        <label className="ctx-label">💉 Insulin on Board (units)</label>
+                        <label className="ctx-label">Insulin on Board (units)</label>
                         <div className="ctx-stepper">
                           <button onClick={() => updateCtx("insulinOnBoard", Math.max(0, ctx.insulinOnBoard - 1))}>−</button>
                           <span>{ctx.insulinOnBoard}u</span>
@@ -541,27 +540,27 @@ export default function Dashboard() {
                       </div>
 
                       <div className="ctx-item">
-                        <label className="ctx-label">😴 Sleep Last Night (hours)</label>
+                        <label className="ctx-label">Sleep Last Night (hours)</label>
                         <input
                           className="ctx-slider" type="range" min="0" max="12" step="0.5"
                           value={ctx.sleepHours}
                           onChange={(e) => updateCtx("sleepHours", parseFloat(e.target.value))}
                         />
-                        <span className="ctx-slider-val">{ctx.sleepHours}h {ctx.sleepHours < 6 ? "⚠️" : "✓"}</span>
+                        <span className="ctx-slider-val">{ctx.sleepHours}h {ctx.sleepHours < 6 ? "— Low" : ""}</span>
                       </div>
 
                       <div className="ctx-item">
-                        <label className="ctx-label">🧠 Stress Level</label>
+                        <label className="ctx-label">Stress Level</label>
                         <input
                           className="ctx-slider" type="range" min="1" max="10" step="1"
                           value={ctx.stressLevel}
                           onChange={(e) => updateCtx("stressLevel", parseInt(e.target.value))}
                         />
-                        <span className="ctx-slider-val">{ctx.stressLevel}/10 {ctx.stressLevel >= 8 ? "⚠️" : ""}</span>
+                        <span className="ctx-slider-val">{ctx.stressLevel}/10 {ctx.stressLevel >= 8 ? "— High" : ""}</span>
                       </div>
 
                       <div className="ctx-item">
-                        <label className="ctx-label">❤️ Heart Rate (bpm)</label>
+                        <label className="ctx-label">Heart Rate (bpm)</label>
                         <input
                           className="ctx-number" type="number" min="40" max="200"
                           placeholder={`Auto: ${rows[rows.length - 1]?.heart_rate ?? 72}`}
@@ -571,22 +570,22 @@ export default function Dashboard() {
                       </div>
 
                       <div className="ctx-item ctx-toggle-item">
-                        <label className="ctx-label">💊 Insulin taken, no meal followed?</label>
+                        <label className="ctx-label">Insulin taken, no meal followed?</label>
                         <button
                           className={`ctx-toggle-btn ${ctx.skippedMeal ? "active" : ""}`}
                           onClick={() => updateCtx("skippedMeal", !ctx.skippedMeal)}
                         >
-                          {ctx.skippedMeal ? "YES ⚠️" : "NO"}
+                          {ctx.skippedMeal ? "YES" : "NO"}
                         </button>
                       </div>
 
                       <div className="ctx-item ctx-toggle-item">
-                        <label className="ctx-label">🍺 Alcohol consumed today?</label>
+                        <label className="ctx-label">Alcohol consumed today?</label>
                         <button
                           className={`ctx-toggle-btn ${ctx.alcoholConsumed ? "active" : ""}`}
                           onClick={() => updateCtx("alcoholConsumed", !ctx.alcoholConsumed)}
                         >
-                          {ctx.alcoholConsumed ? "YES ⚠️" : "NO"}
+                          {ctx.alcoholConsumed ? "YES" : "NO"}
                         </button>
                       </div>
 
@@ -597,7 +596,7 @@ export default function Dashboard() {
                 {/* ── MAIN GRID ── */}
                 <div className="dash-grid">
 
-                  {/* ── LEFT COLUMN ── */}
+                  {/* LEFT */}
                   <div className="dash-left">
 
                     <div className="card risk-card" style={{ background: risk.bg }}>
@@ -618,7 +617,7 @@ export default function Dashboard() {
                       {prediction.crash_predicted && prediction.crash_in_minutes && (
                         <div className="crash-prediction-box" style={{ borderColor: risk.color }}>
                           <p className="crash-prediction-label" style={{ color: risk.color }}>
-                            ⚠️ Crash predicted in
+                            Crash predicted in
                           </p>
                           <p className="crash-prediction-time" style={{ color: risk.color }}>
                             ~{prediction.crash_in_minutes} min
@@ -632,17 +631,14 @@ export default function Dashboard() {
                       )}
 
                       {prediction.risk === "high" && !showPopup && (
-                        <button
-                          className="popup-reopen-btn"
-                          onClick={() => setShowPopup(true)}
-                        >
-                          ⚠️ View Warning Again
+                        <button className="popup-reopen-btn" onClick={() => setShowPopup(true)}>
+                          View Warning Again
                         </button>
                       )}
 
                       {prediction.risk === "food_spike" && (
                         <p className="risk-prediction" style={{ color: "#2980b9" }}>
-                          🍽️ Rise detected — likely food or exercise. No alert triggered.
+                          Rise detected — likely food or exercise. No alert triggered.
                         </p>
                       )}
                     </div>
@@ -701,7 +697,7 @@ export default function Dashboard() {
                     </div>
 
                     <div className="card food-card">
-                      <p className="card-label">🍎 Food Suggestion</p>
+                      <p className="card-label">Food Suggestion</p>
                       <p className="food-text">"{prediction.food_suggestion}"</p>
                       {prediction.safe_to_sleep && (
                         <p className="food-text" style={{ marginTop: 10, fontStyle: "normal", fontSize: "0.85rem", color: "#666" }}>
@@ -712,7 +708,7 @@ export default function Dashboard() {
 
                   </div>
 
-                  {/* ── CENTER: SOS BUTTON ── */}
+                  {/* CENTER */}
                   <div className="dash-center">
                     <p className="sos-label">Emergency Alert</p>
                     <button
@@ -722,13 +718,13 @@ export default function Dashboard() {
                       onClick={handleManualSOS}
                       disabled={sosSent}
                     >
-                      {sosSent ? "✓ SENT" : "SOS"}
+                      {sosSent ? "SENT" : "SOS"}
                     </button>
                     <p className="sos-sub">
                       {sosSent
-                        ? "Alert sent to your caregiver's mobile!"
+                        ? "Alert sent to your caregiver's mobile."
                         : prediction.risk === "high"
-                        ? "Tap to alert caregiver NOW"
+                        ? "Tap to alert caregiver now"
                         : "Tap to send emergency alert"}
                     </p>
                     {prediction.risk === "high" && !sosSent && countdownDisplay && (
@@ -740,7 +736,7 @@ export default function Dashboard() {
                     )}
                   </div>
 
-                  {/* ── RIGHT COLUMN ── */}
+                  {/* RIGHT */}
                   <div className="dash-right">
                     <div className="card chart-card">
                       <p className="card-label">Glucose Trend (Last 20 Readings)</p>
@@ -814,8 +810,8 @@ export default function Dashboard() {
 
             {loading && !prediction && (
               <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
-                <p style={{ fontSize: "2rem", marginBottom: 12 }}>⏳</p>
-                <p style={{ color: "#76575D", fontWeight: 600 }}>Analysing your glucose data…</p>
+                <p style={{ fontSize: "2rem", marginBottom: 12 }}>...</p>
+                <p style={{ color: "#76575D", fontWeight: 600 }}>Analysing your glucose data</p>
                 <p style={{ color: "#aaa", fontSize: "0.85rem" }}>Connecting to Glucera AI backend</p>
               </div>
             )}

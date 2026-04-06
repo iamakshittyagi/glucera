@@ -859,3 +859,267 @@
   padding: 3px 10px;
   border-radius: 50px;
 }
+
+/* ══════════════════════════════════════════════════════
+   APPEND ALL OF THIS TO THE BOTTOM OF Dashboard.css
+   ══════════════════════════════════════════════════════ */
+
+/* ── CRASH WARNING POPUP OVERLAY ── */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(30, 10, 10, 0.72);
+  backdrop-filter: blur(6px);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: popupFadeIn 0.25s ease;
+}
+
+@keyframes popupFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.popup-box {
+  background: #fff;
+  border-radius: 28px;
+  padding: 40px 36px 32px;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  box-shadow:
+    0 0 0 4px rgba(192, 57, 43, 0.15),
+    0 32px 80px rgba(192, 57, 43, 0.25);
+  animation: popupSlideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes popupSlideUp {
+  from { transform: translateY(40px) scale(0.95); opacity: 0; }
+  to   { transform: translateY(0)    scale(1);    opacity: 1; }
+}
+
+/* Pulsing danger icon ring */
+.popup-icon-ring {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: #fdf0ef;
+  border: 3px solid #c0392b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  animation: iconPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { box-shadow: 0 0 0 0   rgba(192,57,43,0.4); }
+  50%       { box-shadow: 0 0 0 16px rgba(192,57,43,0);   }
+}
+
+.popup-icon {
+  font-size: 2.2rem;
+  font-weight: 900;
+  color: #c0392b;
+  font-family: 'Playfair Display', serif;
+  line-height: 1;
+}
+
+.popup-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.6rem;
+  font-weight: 900;
+  color: #c0392b;
+  margin-bottom: 20px;
+  line-height: 1.2;
+}
+
+/* Stats row inside popup */
+.popup-stats {
+  display: flex;
+  justify-content: center;
+  gap: 24px;
+  margin-bottom: 20px;
+}
+
+.popup-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.popup-stat-val {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  font-family: 'Playfair Display', serif;
+}
+
+.popup-stat-label {
+  font-size: 0.7rem;
+  color: #aaa;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.popup-suggestion {
+  font-size: 0.95rem;
+  color: #3a2528;
+  background: #fdf0ef;
+  border-radius: 12px;
+  padding: 12px 16px;
+  margin-bottom: 24px;
+  line-height: 1.5;
+}
+
+/* Countdown ring */
+.popup-countdown-wrap {
+  position: relative;
+  width: 80px;
+  height: 80px;
+  margin: 0 auto 8px;
+}
+
+.popup-countdown-svg {
+  width: 80px;
+  height: 80px;
+}
+
+.popup-countdown-num {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  font-weight: 900;
+  color: #c0392b;
+  font-family: 'Playfair Display', serif;
+}
+
+.popup-countdown-label {
+  font-size: 0.78rem;
+  color: #c0392b;
+  font-weight: 700;
+  margin-bottom: 24px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Action buttons */
+.popup-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.popup-btn-dismiss {
+  padding: 14px 24px;
+  border-radius: 50px;
+  border: 2px solid #27ae60;
+  background: #f0faf4;
+  color: #27ae60;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.popup-btn-dismiss:hover {
+  background: #27ae60;
+  color: #fff;
+}
+
+.popup-btn-sos {
+  padding: 14px 24px;
+  border-radius: 50px;
+  border: none;
+  background: #c0392b;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: background 0.2s;
+}
+
+.popup-btn-sos:hover { background: #a93226; }
+
+.popup-confidence {
+  font-size: 0.78rem;
+  color: #bbb;
+}
+
+/* ── CRASH PREDICTION BOX inside risk card ── */
+.crash-prediction-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2px solid;
+  background: rgba(192, 57, 43, 0.05);
+  text-align: center;
+}
+
+.crash-prediction-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.crash-prediction-time {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+  font-family: 'Playfair Display', serif;
+}
+
+.crash-prediction-floor {
+  font-size: 0.82rem;
+  color: #888;
+}
+
+.crash-prediction-floor strong { color: #c0392b; }
+
+/* Reopen popup button */
+.popup-reopen-btn {
+  margin-top: 12px;
+  padding: 8px 18px;
+  border-radius: 50px;
+  border: 1.5px solid #c0392b;
+  background: transparent;
+  color: #c0392b;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+
+.popup-reopen-btn:hover { background: #fdf0ef; }
+
+/* ── LOADING / ERROR PILLS ── */
+.dash-loading-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #76575D;
+  background: #f0e8e8;
+  padding: 3px 10px;
+  border-radius: 50px;
+}
+
+.dash-error-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e67e22;
+  background: #fef9f0;
+  padding: 3px 10px;
+  border-radius: 50px;
+}
