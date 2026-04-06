@@ -5,6 +5,7 @@ import {
 } from "recharts";
 import Navbar from "../components/Navbar";
 import "./Dashboard.css";
+import FileIcon from "../assets/Icons/GLUCERAFILE.png";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const API_URL        = "https://glucera.onrender.com";
@@ -480,7 +481,7 @@ export default function Dashboard() {
             {/* Top bar */}
             <div className="dash-topbar">
               <div className="dash-file-info">
-                <span className="dash-file-icon">📄</span>
+                <img src={FileIcon} alt="file" className="dash-file-icon" style={{ width: 20, height: 20, objectFit: "contain" }} />
                 <span className="dash-file-name">{fileName}</span>
                 {loading && <span className="dash-loading-pill">⏳ Analysing…</span>}
                 {apiError && <span className="dash-error-pill">⚠️ {apiError}</span>}
