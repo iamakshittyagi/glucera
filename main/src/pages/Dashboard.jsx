@@ -508,14 +508,16 @@ export default function Dashboard() {
                       }}
                     />
                   </div>
-                  <button className="context-toggle" onClick={() => setShowPanel((p) => !p)}>
-                    {showPanel ? "Hide Context Panel" : "Add Clinical Context"}
-                  </button>
+                  {prediction?.risk !== "high" && (
+                    <button className="context-toggle" onClick={() => setShowPanel((p) => !p)}>
+                      {showPanel ? "Hide Context Panel" : "Add Clinical Context"}
+                    </button>
+                  )}
                 </div>
 
                 {/* ── CONTEXT PANEL ── */}
-                {showPanel && (
-                  <div className="context-panel">
+                {showPanel && prediction?.risk !== "high" && (
+                    <div className="context-panel">
                     <p className="context-panel-title">Clinical Context — fills your risk score</p>
                     <div className="context-grid">
 
