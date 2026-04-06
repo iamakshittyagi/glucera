@@ -1,6 +1,7 @@
 import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Navbar.css";
+import logo from "../assets/Icons/LOGO.png"
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -15,7 +16,7 @@ export default function Navbar() {
   return (
     <nav className="top-nav">
       <Link to="/" className="top-nav-logo">
-        <img src={require("../assets/Icons/LOGO.png")} alt="Glucera" className="nav-logo-img" />
+        <img src={logo} alt="Glucera" className="nav-logo-img" />
       </Link>
       <div className="top-nav-links">
         {navLinks.map(l => (
