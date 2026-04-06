@@ -6,6 +6,7 @@ import {
 import Navbar from "../components/Navbar";
 import "./Dashboard.css";
 import FileIcon from "../assets/Icons/GLUCERAFILE.png";
+import { onForegroundMessage } from "../utils/firebase-config";
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const API_URL        = "https://glucera.onrender.com";
@@ -246,6 +247,14 @@ export default function Dashboard() {
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
+  }, []);
+
+  // ─── FIREBASE FOREGROUND MESSAGES ──────────────────────────────
+  useEffect(() => {
+    const unsubscribe = onForegroundMessage((payload) => {
+      console.log("FCM message received:", payload);
+    });
+    return () => unsubscribe();
   }, []);
 
   // ─── CALL BACKEND ──────────────────────────────────────────────
