@@ -34,7 +34,7 @@ function speakAlert(riskLevel) {
       ? "Warning. Your glucose is dropping dangerously. Please eat something immediately."
       : "Caution. Your glucose is getting low. Consider having a small snack.";
   const utterance = new SpeechSynthesisUtterance(msg);
-  utterance.rate = 0.9;
+  utterance.rate  = 0.9;
   utterance.pitch = 1.0;
   utterance.volume = 1.0;
   window.speechSynthesis.speak(utterance);
@@ -43,7 +43,7 @@ function speakAlert(riskLevel) {
 async function sendSOSToBackend(trigger, coords) {
   try {
     await fetch(`${API_URL}/sos`, {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         trigger,
@@ -75,7 +75,7 @@ function triggerSOS(trigger = "manual") {
 async function notifyCaregiver(riskLevel, confidence) {
   try {
     await fetch(`${API_URL}/alert-caregiver`, {
-      method: "POST",
+      method:  "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         risk:       riskLevel,
@@ -84,7 +84,7 @@ async function notifyCaregiver(riskLevel, confidence) {
       }),
     });
   } catch {
-    console.warn("Caregiver alert backend unreachable — logged locally.");
+    console.warn("Caregiver alert backend unreachable.");
   }
 }
 
@@ -98,7 +98,6 @@ function triggerAllAlerts(riskLevel, confidence) {
     sendPushNotification(riskLevel, confidence);
     speakAlert(riskLevel);
     notifyCaregiver(riskLevel, confidence);
-    triggerSOS("auto");
   }
 }
 
@@ -133,19 +132,113 @@ const defaultCtx = {
   alcoholConsumed: false,
 };
 
+// ─────────────────────────────────────────────────────────────────
+// CRASH WARNING POPUP
+// Shows when risk = high. Counts down 3 seconds, then fires SOS.
+// Patient can hit "I'm OK" to dismiss and cancel SOS.
+// ─────────────────────────────────────────────────────────────────
+function CrashPopup({ prediction, onDismiss, onSOS }) {
+  const [tick, setTick] = useState(3);
+
+  useEffect(() => {
+    if (tick <= 0) {
+      onSOS();
+      return;
+    }
+    const t = setTimeout(() => setTick((p) => p - 1), 1000);
+    return () => clearTimeout(t);
+  }, [tick]); // eslint-disable-line
+
+  return (
+    <div className="popup-overlay">
+      <div className="popup-box">
+
+        {/* Pulsing danger icon */}
+        <div className="popup-icon-ring">
+          <span className="popup-icon">⚠️</span>
+        </div>
+
+        <h2 className="popup-title">Glucose Crash Predicted</h2>
+
+        <div className="popup-stats">
+          <div className="popup-stat">
+            <span className="popup-stat-val" style={{ color: "#c0392b" }}>
+              {prediction.current_glucose}
+            </span>
+            <span className="popup-stat-label">mg/dL now</span>
+          </div>
+          {prediction.crash_in_minutes && (
+            <div className="popup-stat">
+              <span className="popup-stat-val" style={{ color: "#c0392b" }}>
+                ~{prediction.crash_in_minutes}
+              </span>
+              <span className="popup-stat-label">min to crash</span>
+            </div>
+          )}
+          {prediction.estimated_floor && (
+            <div className="popup-stat">
+              <span className="popup-stat-val" style={{ color: "#e67e22" }}>
+                {prediction.estimated_floor}
+              </span>
+              <span className="popup-stat-label">est. floor mg/dL</span>
+            </div>
+          )}
+        </div>
+
+        <p className="popup-suggestion">{prediction.food_suggestion}</p>
+
+        {/* Countdown ring */}
+        <div className="popup-countdown-wrap">
+          <svg className="popup-countdown-svg" viewBox="0 0 80 80">
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#f0e8e8" strokeWidth="6" />
+            <circle
+              cx="40" cy="40" r="34"
+              fill="none"
+              stroke="#c0392b"
+              strokeWidth="6"
+              strokeDasharray={`${(tick / 3) * 213.6} 213.6`}
+              strokeLinecap="round"
+              transform="rotate(-90 40 40)"
+              style={{ transition: "stroke-dasharray 0.9s linear" }}
+            />
+          </svg>
+          <span className="popup-countdown-num">{tick}</span>
+        </div>
+        <p className="popup-countdown-label">SOS fires in {tick} second{tick !== 1 ? "s" : ""}</p>
+
+        {/* Action buttons */}
+        <div className="popup-actions">
+          <button className="popup-btn-dismiss" onClick={onDismiss}>
+            ✓ I'm OK — Cancel SOS
+          </button>
+          <button className="popup-btn-sos" onClick={onSOS}>
+            🚨 Send SOS Now
+          </button>
+        </div>
+
+        <p className="popup-confidence">
+          AI confidence: <strong>{Math.round(prediction.confidence * 100)}%</strong>
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ─── COMPONENT ────────────────────────────────────────────────────────────────
 export default function Dashboard() {
-  const [data,       setData]       = useState(null);
-  const [rows,       setRows]       = useState([]);
-  const [fileName,   setFileName]   = useState("");
-  const [prediction, setPrediction] = useState(null);
-  const [loading,    setLoading]    = useState(false);
-  const [sosSent,    setSosSent]    = useState(false);
-  const [countdown,  setCountdown]  = useState(null);
-  const [ctx,        setCtx]        = useState(defaultCtx);
-  const [showPanel,  setShowPanel]  = useState(false);
-  const [dragging,   setDragging]   = useState(false);
-  const [apiError,   setApiError]   = useState(null);
+  const [data,        setData]        = useState(null);
+  const [rows,        setRows]        = useState([]);
+  const [fileName,    setFileName]    = useState("");
+  const [prediction,  setPrediction]  = useState(null);
+  const [loading,     setLoading]     = useState(false);
+  const [sosSent,     setSosSent]     = useState(false);
+  const [countdown,   setCountdown]   = useState(null);
+  const [ctx,         setCtx]         = useState(defaultCtx);
+  const [showPanel,   setShowPanel]   = useState(false);
+  const [dragging,    setDragging]    = useState(false);
+  const [apiError,    setApiError]    = useState(null);
+  const [showPopup,   setShowPopup]   = useState(false);
+  const [popupShown,  setPopupShown]  = useState(false); // only show once per risk event
 
   const autoSosTimer      = useRef(null);
   const countdownInterval = useRef(null);
@@ -164,23 +257,12 @@ export default function Dashboard() {
     setApiError(null);
 
     try {
-      // Build glucose array from CSV
-      const glucoseArray = csvRows
-        .map((r) => parseFloat(r.glucose_mg_dl))
-        .filter((v) => !isNaN(v));
-
-      // Build meal/exercise arrays (1 = event at that reading, 0 = no event)
-      const mealArray = csvRows.map((r) =>
-        r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0
-      );
-      const exerciseArray = csvRows.map((r) =>
-        parseFloat(r.exercise_minutes) > 0 ? 1 : 0
-      );
-
-      // Auto-read heart rate from last CSV row if available
-      const lastRow     = csvRows[csvRows.length - 1];
-      const csvHeartRate = parseFloat(lastRow?.heart_rate);
-      const heartRate   = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
+      const glucoseArray   = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
+      const mealArray      = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
+      const exerciseArray  = csvRows.map((r) => (parseFloat(r.exercise_minutes) > 0 ? 1 : 0));
+      const lastRow        = csvRows[csvRows.length - 1];
+      const csvHeartRate   = parseFloat(lastRow?.heart_rate);
+      const heartRate      = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
 
       const payload = {
         glucose:          glucoseArray,
@@ -195,39 +277,41 @@ export default function Dashboard() {
         skipped_meal:     context.skippedMeal     ? 1 : 0,
       };
 
-      const res  = await fetch(`${API_URL}/predict`, {
+      const res = await fetch(`${API_URL}/predict`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
         body:    JSON.stringify(payload),
       });
 
       if (!res.ok) throw new Error(`Backend returned ${res.status}`);
-
       const result = await res.json();
       setPrediction(result);
 
-      // Trigger alerts only on risk change
-      if (result.risk !== prevRisk.current) {
+      // Show popup ONLY when risk transitions to high for the first time
+      if (result.risk === "high" && prevRisk.current !== "high") {
+        setShowPopup(true);
+        setPopupShown(true);
         triggerAllAlerts(result.risk, result.confidence);
-        prevRisk.current = result.risk;
+      } else if (result.risk !== "high") {
+        setShowPopup(false);
+        setPopupShown(false);
       }
+      prevRisk.current = result.risk;
 
     } catch (err) {
       console.error("Predict error:", err);
       setApiError("Could not reach backend. Showing local analysis.");
 
-      // Local fallback
-      const glucoseArray = csvRows
-        .map((r) => parseFloat(r.glucose_mg_dl))
-        .filter((v) => !isNaN(v));
-      const current = glucoseArray[glucoseArray.length - 1];
-      const rate    = glucoseArray.length >= 2
+      const glucoseArray = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
+      const current      = glucoseArray[glucoseArray.length - 1];
+      const rate         = glucoseArray.length >= 2
         ? (glucoseArray[glucoseArray.length - 1] - glucoseArray[glucoseArray.length - 2]) / 15
         : 0;
-      const tth     = rate < 0 ? Math.min(120, (current - 70) / Math.abs(rate)) : null;
+      const tth = rate < 0 ? Math.min(120, (current - 70) / Math.abs(rate)) : null;
+      const risk = current < 70 ? "high" : current < 85 ? "medium" : "low";
 
-      setPrediction({
-        risk:               current < 70 ? "high" : current < 85 ? "medium" : "low",
+      const fallback = {
+        risk,
         confidence:         current < 70 ? 0.88 : 0.65,
         current_glucose:    current,
         trend:              Math.round(rate * 60),
@@ -240,7 +324,14 @@ export default function Dashboard() {
           ? "Have a small snack — a banana or handful of crackers."
           : "Glucose looks stable. Keep up your current routine!",
         class_probabilities: {},
-      });
+      };
+      setPrediction(fallback);
+
+      if (risk === "high" && prevRisk.current !== "high") {
+        setShowPopup(true);
+        triggerAllAlerts(risk, fallback.confidence);
+      }
+      prevRisk.current = risk;
     } finally {
       setLoading(false);
     }
@@ -248,18 +339,16 @@ export default function Dashboard() {
 
   // Re-call backend when context changes
   useEffect(() => {
-    if (rows.length >= 2) {
-      callBackend(rows, ctx);
-    }
+    if (rows.length >= 2) callBackend(rows, ctx);
   }, [ctx]); // eslint-disable-line
 
-  // ─── SOS COUNTDOWN ─────────────────────────────────────────────
+  // ─── SOS COUNTDOWN (post-popup, after patient dismisses) ───────
   useEffect(() => {
     clearTimeout(autoSosTimer.current);
     clearInterval(countdownInterval.current);
     setCountdown(null);
 
-    if (prediction?.risk === "high" && !sosSent) {
+    if (prediction?.risk === "high" && !sosSent && !showPopup) {
       const totalSecs = (prediction.crash_in_minutes || 5) * 60;
       setCountdown(totalSecs);
       countdownInterval.current = setInterval(() => {
@@ -277,7 +366,7 @@ export default function Dashboard() {
       clearTimeout(autoSosTimer.current);
       clearInterval(countdownInterval.current);
     };
-  }, [prediction?.risk, sosSent]); // eslint-disable-line
+  }, [prediction?.risk, sosSent, showPopup]); // eslint-disable-line
 
   // ─── FILE HANDLER ───────────────────────────────────────────────
   const handleFile = useCallback((file) => {
@@ -286,6 +375,9 @@ export default function Dashboard() {
     setSosSent(false);
     setPrediction(null);
     setApiError(null);
+    setShowPopup(false);
+    setPopupShown(false);
+    prevRisk.current = null;
     const reader = new FileReader();
     reader.onload = (e) => {
       const parsed = parseCSV(e.target.result);
@@ -303,8 +395,26 @@ export default function Dashboard() {
     handleFile(e.dataTransfer.files[0]);
   }, [handleFile]);
 
+  // ─── POPUP HANDLERS ────────────────────────────────────────────
+  function handlePopupDismiss() {
+    // Patient says they're OK — close popup, don't fire SOS
+    setShowPopup(false);
+    setSosSent(false); // reset so the dashboard SOS button still works
+  }
+
+  function handlePopupSOS() {
+    setShowPopup(false);
+    setSosSent(true);
+    clearTimeout(autoSosTimer.current);
+    clearInterval(countdownInterval.current);
+    setCountdown(null);
+    triggerSOS("popup_auto");
+    notifyCaregiver(prediction?.risk, prediction?.confidence);
+  }
+
   function handleManualSOS() {
     setSosSent(true);
+    setShowPopup(false);
     clearTimeout(autoSosTimer.current);
     clearInterval(countdownInterval.current);
     setCountdown(null);
@@ -313,15 +423,13 @@ export default function Dashboard() {
 
   const updateCtx = (key, val) => setCtx((prev) => ({ ...prev, [key]: val }));
 
-  // ─── DERIVED DISPLAY VALUES ─────────────────────────────────────
-  const risk             = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
-  const confidencePct    = prediction ? Math.round(prediction.confidence * 100) : null;
-  const recentReadings   = rows.slice(-20);
+  // ─── DERIVED VALUES ─────────────────────────────────────────────
+  const risk          = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
+  const confidencePct = prediction ? Math.round(prediction.confidence * 100) : null;
+  const recentReadings = rows.slice(-20);
   const countdownDisplay = countdown !== null
     ? `${String(Math.floor(countdown / 60)).padStart(2, "0")}:${String(countdown % 60).padStart(2, "0")}`
     : null;
-
-  // Clinical score 0–100 derived from confidence + risk
   const clinicalScore = prediction
     ? prediction.risk === "high"
       ? Math.round(60 + prediction.confidence * 40)
@@ -333,6 +441,15 @@ export default function Dashboard() {
   return (
     <div className="dash-page">
       <Navbar />
+
+      {/* ── CRASH WARNING POPUP ── */}
+      {showPopup && prediction && (
+        <CrashPopup
+          prediction={prediction}
+          onDismiss={handlePopupDismiss}
+          onSOS={handlePopupSOS}
+        />
+      )}
 
       <div className="dash-container">
 
@@ -482,7 +599,6 @@ export default function Dashboard() {
                   {/* ── LEFT COLUMN ── */}
                   <div className="dash-left">
 
-                    {/* Risk badge */}
                     <div className="card risk-card" style={{ background: risk.bg }}>
                       <p className="card-label">Current Risk Level</p>
                       <div
@@ -498,7 +614,6 @@ export default function Dashboard() {
                         AI confidence: <strong>{confidencePct}%</strong>
                       </p>
 
-                      {/* Crash prediction — the new predictive output */}
                       {prediction.crash_predicted && prediction.crash_in_minutes && (
                         <div className="crash-prediction-box" style={{ borderColor: risk.color }}>
                           <p className="crash-prediction-label" style={{ color: risk.color }}>
@@ -515,6 +630,15 @@ export default function Dashboard() {
                         </div>
                       )}
 
+                      {prediction.risk === "high" && !showPopup && (
+                        <button
+                          className="popup-reopen-btn"
+                          onClick={() => setShowPopup(true)}
+                        >
+                          ⚠️ View Warning Again
+                        </button>
+                      )}
+
                       {prediction.risk === "food_spike" && (
                         <p className="risk-prediction" style={{ color: "#2980b9" }}>
                           🍽️ Rise detected — likely food or exercise. No alert triggered.
@@ -522,19 +646,20 @@ export default function Dashboard() {
                       )}
                     </div>
 
-                    {/* Prediction details */}
                     <div className="card explain-card">
                       <p className="card-label">Prediction Signals</p>
                       <ul className="explain-list">
                         <li className="explain-item">
                           <span className="explain-dot" />
-                          Glucose trend: <strong style={{ marginLeft: 4 }}>
+                          Glucose trend:
+                          <strong style={{ marginLeft: 4 }}>
                             {prediction.trend > 0 ? "+" : ""}{prediction.trend} mg/dL/hr
                           </strong>
                         </li>
                         <li className="explain-item">
                           <span className="explain-dot" />
-                          Rate of change: <strong style={{ marginLeft: 4 }}>
+                          Rate of change:
+                          <strong style={{ marginLeft: 4 }}>
                             {prediction.rate_of_change > 0 ? "+" : ""}
                             {(prediction.rate_of_change * 60).toFixed(1)} mg/dL/hr
                           </strong>
@@ -542,7 +667,8 @@ export default function Dashboard() {
                         {prediction.time_to_hypo_min && (
                           <li className="explain-item">
                             <span className="explain-dot" style={{ background: "#c0392b" }} />
-                            Time to hypo threshold: <strong style={{ marginLeft: 4, color: "#c0392b" }}>
+                            Time to hypo threshold:
+                            <strong style={{ marginLeft: 4, color: "#c0392b" }}>
                               ~{prediction.time_to_hypo_min} min
                             </strong>
                           </li>
@@ -550,28 +676,29 @@ export default function Dashboard() {
                         {prediction.estimated_floor && (
                           <li className="explain-item">
                             <span className="explain-dot" style={{ background: "#e67e22" }} />
-                            Projected glucose floor: <strong style={{ marginLeft: 4, color: "#e67e22" }}>
+                            Projected glucose floor:
+                            <strong style={{ marginLeft: 4, color: "#e67e22" }}>
                               {prediction.estimated_floor} mg/dL
                             </strong>
                           </li>
                         )}
-                        {prediction.class_probabilities && Object.entries(prediction.class_probabilities).map(([cls, prob]) => (
-                          <li key={cls} className="explain-item">
-                            <span className="explain-dot" style={{
-                              background: cls === "high" ? "#c0392b" : cls === "medium" ? "#e67e22" : "#27ae60"
-                            }} />
-                            {cls.charAt(0).toUpperCase() + cls.slice(1)} risk probability:
-                            <span className="driver-pts" style={{
-                              color: cls === "high" ? "#c0392b" : cls === "medium" ? "#e67e22" : "#27ae60"
-                            }}>
-                              {Math.round(prob * 100)}%
-                            </span>
-                          </li>
-                        ))}
+                        {prediction.class_probabilities &&
+                          Object.entries(prediction.class_probabilities).map(([cls, prob]) => (
+                            <li key={cls} className="explain-item">
+                              <span className="explain-dot" style={{
+                                background: cls === "high" ? "#c0392b" : cls === "medium" ? "#e67e22" : "#27ae60",
+                              }} />
+                              {cls.charAt(0).toUpperCase() + cls.slice(1)} risk probability:
+                              <span className="driver-pts" style={{
+                                color: cls === "high" ? "#c0392b" : cls === "medium" ? "#e67e22" : "#27ae60",
+                              }}>
+                                {Math.round(prob * 100)}%
+                              </span>
+                            </li>
+                          ))}
                       </ul>
                     </div>
 
-                    {/* Food suggestion */}
                     <div className="card food-card">
                       <p className="card-label">🍎 Food Suggestion</p>
                       <p className="food-text">"{prediction.food_suggestion}"</p>
@@ -649,7 +776,6 @@ export default function Dashboard() {
                       </ResponsiveContainer>
                     </div>
 
-                    {/* Stats row */}
                     <div className="stats-row">
                       <div className="stat-card">
                         <p className="stat-val">
@@ -685,7 +811,6 @@ export default function Dashboard() {
               </>
             )}
 
-            {/* Loading state while waiting for backend */}
             {loading && !prediction && (
               <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
                 <p style={{ fontSize: "2rem", marginBottom: 12 }}>⏳</p>
