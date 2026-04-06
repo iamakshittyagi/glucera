@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+
+.history-page {
+  font-family: 'DM Sans', sans-serif;
+  background: #f0eaeb;
+  min-height: 100vh;
+}
+
+.history-container {
+  padding: 16px 24px 40px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* ── HEADER ── */
+.history-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.history-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 2rem;
+  font-weight: 700;
+  color: #3a2528;
+}
+
+.history-sub {
+  font-size: 0.9rem;
+  color: #999;
+  margin-top: 4px;
+}
+
+/* ── FILTERS ── */
+.history-filters {
+  display: flex;
+  gap: 8px;
+}
+
+.filter-btn {
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 50px;
+  border: 1.5px solid #e0d0d2;
+  background: #fff;
+  color: #76575D;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.filter-btn:hover {
+  background: #f5f0f1;
+}
+
+.filter-btn.active {
+  background: #76575D;
+  color: #fff;
+  border-color: #76575D;
+}
+
+/* ── STATS ── */
+.history-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.history-stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 20px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(80,40,50,0.07);
+  border-top: 3px solid #76575D;
+}
+
+.history-stat-val {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #76575D;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.history-stat-label {
+  font-size: 0.75rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── TABLE ── */
+.history-table-wrap {
+  background: #fff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(80,40,50,0.07);
+  overflow: hidden;
+}
+
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.history-table thead tr {
+  background: #76575D;
+}
+
+.history-table th {
+  padding: 14px 18px;
+  text-align: left;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.history-table tbody tr {
+  border-bottom: 1px solid #f5f0f1;
+  transition: background 0.15s;
+}
+
+.history-table tbody tr:hover {
+  background: #fdf7f8;
+}
+
+.history-table td {
+  padding: 13px 18px;
+  font-size: 0.88rem;
+  color: #444;
+}
+
+.td-time {
+  color: #999;
+  font-size: 0.82rem;
+}
+
+.risk-pill {
+  display: inline-block;
+  padding: 4px 14px;
+  border-radius: 50px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .history-stats { grid-template-columns: repeat(2, 1fr); }
+  .history-header { flex-direction: column; align-items: flex-start; }
+  .history-table th, .history-table td { padding: 10px 12px; font-size: 0.8rem; }
+}

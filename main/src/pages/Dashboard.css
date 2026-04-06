@@ -1,0 +1,327 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+
+.dash-page {
+  font-family: 'DM Sans', sans-serif;
+  background: #f0eaeb;
+  min-height: 100vh;
+}
+
+.dash-container {
+  padding: 16px 20px 32px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* ── UPLOAD ── */
+.upload-zone {
+  border: 2.5px dashed #c4a8ac;
+  border-radius: 24px;
+  background: #fff;
+  padding: 80px 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  margin-top: 12px;
+}
+
+.upload-zone.dragging {
+  border-color: #76575D;
+  background: #fdf7f8;
+}
+
+.upload-icon { font-size: 3rem; margin-bottom: 16px; }
+
+.upload-title {
+  font-family: 'Playfair Display', serif;
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #3a2528;
+  margin-bottom: 10px;
+}
+
+.upload-sub {
+  color: #888;
+  font-size: 0.95rem;
+  margin-bottom: 28px;
+}
+
+.upload-btn {
+  display: inline-block;
+  background: #76575D;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  padding: 13px 36px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.2s;
+  margin-bottom: 16px;
+}
+
+.upload-btn:hover { background: #5e4449; }
+
+.upload-hint {
+  font-size: 0.78rem;
+  color: #bbb;
+}
+
+/* ── TOP BAR ── */
+.dash-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fff;
+  border-radius: 50px;
+  padding: 10px 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(80,40,50,0.07);
+}
+
+.dash-file-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.88rem;
+  color: #555;
+  font-weight: 500;
+}
+
+.dash-file-icon { font-size: 1.1rem; }
+
+.dash-reupload {
+  background: #76575D;
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 8px 20px;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dash-reupload:hover { background: #5e4449; }
+
+/* ── MAIN GRID ── */
+.dash-grid {
+  display: grid;
+  grid-template-columns: 1fr 220px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+/* ── CARDS ── */
+.card {
+  background: #fff;
+  border-radius: 20px;
+  padding: 22px;
+  box-shadow: 0 4px 20px rgba(80,40,50,0.07);
+  margin-bottom: 16px;
+}
+
+.card-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #aaa;
+  margin-bottom: 14px;
+}
+
+/* ── RISK CARD ── */
+.risk-card { text-align: center; }
+
+.risk-badge {
+  display: inline-block;
+  font-size: 1.3rem;
+  font-weight: 800;
+  padding: 12px 28px;
+  border-radius: 50px;
+  border: 2.5px solid;
+  margin-bottom: 12px;
+  letter-spacing: 1px;
+}
+
+.risk-glucose {
+  font-size: 0.9rem;
+  color: #555;
+  margin-bottom: 8px;
+}
+
+.risk-prediction {
+  font-size: 0.88rem;
+  margin-top: 8px;
+}
+
+/* ── EXPLAIN CARD ── */
+.explain-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.explain-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.88rem;
+  color: #444;
+}
+
+.explain-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #76575D;
+  flex-shrink: 0;
+}
+
+.explain-none {
+  font-size: 0.88rem;
+  color: #999;
+}
+
+/* ── FOOD CARD ── */
+.food-text {
+  font-size: 0.95rem;
+  color: #3a2528;
+  line-height: 1.6;
+  font-style: italic;
+}
+
+/* ── SOS BUTTON ── */
+.dash-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding-top: 20px;
+  gap: 14px;
+  position: sticky;
+  top: 20px;
+}
+
+.sos-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #aaa;
+}
+
+.sos-btn {
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: #76575D;
+  color: #fff;
+  font-family: 'DM Sans', sans-serif;
+  font-size: 2rem;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+  letter-spacing: 3px;
+  box-shadow:
+    0 0 0 12px rgba(118,87,93,0.15),
+    0 0 0 24px rgba(118,87,93,0.07),
+    0 8px 32px rgba(118,87,93,0.35);
+  transition: transform 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.sos-btn:hover {
+  background: #5e4449;
+  transform: scale(1.05);
+}
+
+.sos-btn.sos-sent {
+  background: #27ae60;
+  box-shadow:
+    0 0 0 12px rgba(39,174,96,0.15),
+    0 0 0 24px rgba(39,174,96,0.07),
+    0 8px 32px rgba(39,174,96,0.3);
+}
+
+.sos-btn.sos-pulse {
+  animation: sosPulse 1.2s infinite;
+}
+
+@keyframes sosPulse {
+  0%   { box-shadow: 0 0 0 12px rgba(192,57,43,0.25), 0 0 0 24px rgba(192,57,43,0.12), 0 8px 32px rgba(192,57,43,0.4); background: #c0392b; }
+  50%  { box-shadow: 0 0 0 20px rgba(192,57,43,0.1),  0 0 0 36px rgba(192,57,43,0.05), 0 8px 40px rgba(192,57,43,0.5); background: #a93226; }
+  100% { box-shadow: 0 0 0 12px rgba(192,57,43,0.25), 0 0 0 24px rgba(192,57,43,0.12), 0 8px 32px rgba(192,57,43,0.4); background: #c0392b; }
+}
+
+.sos-sub {
+  font-size: 0.8rem;
+  color: #888;
+  text-align: center;
+  max-width: 160px;
+}
+
+.sos-auto {
+  font-size: 0.75rem;
+  color: #c0392b;
+  text-align: center;
+  font-weight: 600;
+  max-width: 160px;
+}
+
+/* ── CHART CARD ── */
+.chart-card { margin-bottom: 16px; }
+
+/* ── STATS ROW ── */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.stat-card {
+  background: #fff;
+  border-radius: 16px;
+  padding: 16px;
+  text-align: center;
+  box-shadow: 0 4px 16px rgba(80,40,50,0.07);
+  border-top: 3px solid #76575D;
+}
+
+.stat-val {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #76575D;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+
+.stat-val span {
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: #aaa;
+}
+
+.stat-label {
+  font-size: 0.72rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1024px) {
+  .dash-grid {
+    grid-template-columns: 1fr;
+  }
+  .dash-center {
+    order: -1;
+    position: static;
+    padding: 20px 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .dash-container { padding: 10px 12px 24px; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+}
