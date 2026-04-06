@@ -17,10 +17,17 @@ const navLinks = [
 ];
 
 const features = [
-  { icon: SOSIcon, title: "Hypoglycemia Risk Alert", desc: "Our AI detects glucose crashes before they happen and immediately alerts." },
-  { icon: ReminderIcon, title: "Smart Reminders", desc: "Glucera timely nudges for meals & medication." },
-  { icon: FoodIcon, title: "Food Suggestions", desc: "Instant advice when glucose drops." },
-  { icon: GraphIcon, title: "Graphical Reports", desc: "Weekly summaries for your doctor" },
+  { icon: SOSIcon,      title: "Hypoglycemia Risk Alert", desc: "Our AI detects glucose crashes before they happen and immediately alerts." },
+  { icon: ReminderIcon, title: "Smart Reminders",          desc: "Glucera timely nudges for meals & medication." },
+  { icon: FoodIcon,     title: "Food Suggestions",         desc: "Instant advice when glucose drops." },
+  { icon: GraphIcon,    title: "Graphical Reports",        desc: "Weekly summaries for your doctor" },
+];
+
+const team = [
+  { name: "Akshit Tyagi",   github: "iamakshittyagi" },
+  { name: "Zuha Fathima",   github: "Zoo57"           },
+  { name: "Allada Jayanth", github: "A-Jayanth-03"   },
+  { name: "Jhanvi Chandran",github: "Jhanvi0610"      },
 ];
 
 export default function Home() {
@@ -79,6 +86,39 @@ export default function Home() {
           ))}
         </div>
       </div>
+
+      {/* ── TRANSPARENT FOOTER ── */}
+      <footer className="site-footer">
+        <div className="footer-inner">
+
+          <Link to="/" className="footer-logo">
+            <img src={LOGO} alt="Glucera" className="footer-logo-img" />
+          </Link>
+
+          <div className="footer-team">
+            {team.map(m => (
+              <a
+                key={m.github}
+                href={`https://github.com/${m.github}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="footer-member"
+              >
+                <img
+                  src={`https://github.com/${m.github}.png?size=56`}
+                  alt={m.name}
+                  className="footer-avatar"
+                />
+                <span className="footer-member-name">{m.name}</span>
+              </a>
+            ))}
+          </div>
+
+          <p className="footer-copy">© {new Date().getFullYear()} Glucera</p>
+
+        </div>
+      </footer>
+
     </div>
   );
 }
