@@ -2,6 +2,13 @@ import React from "react";
 import { Link, useLocation } from "react-router-dom";
 import "./Home.css";
 
+import LOGO from "../assets/Icons/LOGO.png";
+import SOSIcon from "../assets/Icons/GLUCERASOS.png";
+import ReminderIcon from "../assets/Icons/GLUCERAREMINDER.png";
+import FoodIcon from "../assets/Icons/GLUCERAFOOD.png";
+import GraphIcon from "../assets/Icons/GLUCERAGRAPH.png";
+import HeroVideo from "../assets/Videos/GLUCERA1.mp4";
+
 const navLinks = [
   { to: "/", label: "Home" },
   { to: "/dashboard", label: "Dashboard" },
@@ -10,10 +17,10 @@ const navLinks = [
 ];
 
 const features = [
-  { icon: require("../assets/Icons/GLUCERASOS.png"), title: "Hypoglycemia Risk Alert", desc: "Our AI detects glucose crashes before they happen and immediatly it." },
-  { icon: require("../assets/Icons/GLUCERAREMINDER.png"), title: "Smart Reminders", desc: "Glucera timely nudges for meals & medication." },
-  { icon: require("../assets/Icons/GLUCERAFOOD.png"), title: "Food Suggestions", desc: "Instant advice when glucose drops." },
-  { icon: require("../assets/Icons/GLUCERAGRAPH.png"), title: "Graphical Reports", desc: "Weekly summaries for your doctor" },
+  { icon: SOSIcon, title: "Hypoglycemia Risk Alert", desc: "Our AI detects glucose crashes before they happen and immediately alerts." },
+  { icon: ReminderIcon, title: "Smart Reminders", desc: "Glucera timely nudges for meals & medication." },
+  { icon: FoodIcon, title: "Food Suggestions", desc: "Instant advice when glucose drops." },
+  { icon: GraphIcon, title: "Graphical Reports", desc: "Weekly summaries for your doctor" },
 ];
 
 export default function Home() {
@@ -25,8 +32,8 @@ export default function Home() {
       {/* ── FLOATING NAVBAR ── */}
       <nav className="top-nav">
         <Link to="/" className="top-nav-logo">
-  <img src={require("../assets/Icons/LOGO.png")} alt="Glucera" className="nav-logo-img" />
-</Link>
+          <img src={LOGO} alt="Glucera" className="nav-logo-img" />
+        </Link>
         <div className="top-nav-links">
           {navLinks.map(l => (
             <Link
@@ -41,18 +48,11 @@ export default function Home() {
 
       {/* ── HERO FRAME ── */}
       <div className="hero">
-        <video
-          className="hero-bg"
-          autoPlay
-          muted
-          loop
-          playsInline
-        >
-          <source src={require("../assets/Videos/GLUCERA1.mp4")} type="video/mp4" />
+        <video className="hero-bg" autoPlay muted loop playsInline>
+          <source src={HeroVideo} type="video/mp4" />
         </video>
         <div className="hero-overlay" />
 
-        {/* Hero text */}
         <div className="hero-content">
           <p className="hero-eyebrow">· Healthcare ·</p>
           <h1 className="hero-heading">Know Your Risk,<br />Know Your Response.</h1>
@@ -78,7 +78,6 @@ export default function Home() {
             </div>
           ))}
         </div>
-
       </div>
     </div>
   );
