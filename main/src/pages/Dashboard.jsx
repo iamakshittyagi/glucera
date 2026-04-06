@@ -462,7 +462,9 @@ export default function Dashboard() {
             onDragLeave={() => setDragging(false)}
             onDrop={onDrop}
           >
-            <div className="upload-icon">📂</div>
+            <div className="upload-icon">
+  <img src={FileIcon} alt="file" style={{ width: 100, height: 100, objectFit: "contain" }} />
+</div>
             <h2 className="upload-title">Upload Your CGM Data</h2>
             <p className="upload-sub">Drag & drop your CSV file here, or click to browse</p>
             <label className="upload-btn">
