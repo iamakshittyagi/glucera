@@ -10,15 +10,15 @@ export default function Caregiver() {
     if (saved) setStatus("registered");
   }, []);
 
+  
   async function handleRegister() {
-    const token = await requestNotificationPermission();
-    if (token) {
-      localStorage.setItem("caregiver_token", token);
-      setStatus("registered");
-    } else {
-      setStatus("denied");
-    }
+  const token = await requestNotificationPermission();
+  if (token) {
+    setStatus("registered");
+  } else {
+    setStatus("denied");
   }
+}
 
   return (
     <div style={{
