@@ -14,12 +14,15 @@ const messaging = firebase.messaging();
 
 // Handle background messages
 messaging.onBackgroundMessage((payload) => {
-  console.log("Background message:", payload);
-  const { title, body } = payload.notification;
-  self.registration.showNotification(title, {
-    body,
-    icon: "/favicon.png",
+  console.log("Background message received:", payload);
+
+  const { title, body, icon } = payload.notification || {};
+
+  self.registration.showNotification(title || "Glucera Alert", {
+    body: body || "Your patient needs attention.",
+    icon: icon || "/favicon.png",
     badge: "/favicon.png",
     vibrate: [200, 100, 200],
+    requireInteraction: true,   // keeps notification visible until user dismisses
   });
 });
