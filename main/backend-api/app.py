@@ -1,10 +1,9 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 from routes.predict import predict_bp
 from routes.glucose import glucose_bp
 from glucose_stream import start_glucose_stream
-from firebase_alerts import send_push_to_caregiver
 import threading
 import requests
 import time
@@ -17,8 +16,6 @@ app.register_blueprint(predict_bp)
 app.register_blueprint(glucose_bp)
 
 # ── IN-MEMORY STATE ───────────────────────────────────────────────
-caregiver_fcm_token = None
-
 latest_alert = {
     "risk":      "low",
     "glucose":   None,
@@ -26,19 +23,13 @@ latest_alert = {
     "message":   None,
 }
 
-# ── ROUTE 1: Caregiver registers their device ─────────────────────
-@app.route("/register-caregiver", methods=["POST"])
-def register_caregiver():
-    global caregiver_fcm_token
-    data  = request.get_json()
-    token = data.get("token")
-    if not token:
-        return jsonify({"error": "No token provided"}), 400
-    caregiver_fcm_token = token
-    print(f"Caregiver registered: {token[:20]}...")
-    return jsonify({"status": "Caregiver registered successfully"})
+# ── WEBSOCKET: Caregiver connects ────────────────────────────────
+@socketio.on("caregiver_join")
+def handle_caregiver_join():
+    print("Caregiver connected via WebSocket")
+    emit("alert_update", latest_alert)
 
-# ── ROUTE 2: Dashboard calls this when risk = high ────────────────
+# ── ROUTE 1: Dashboard calls when risk = high ─────────────────────
 @app.route("/alert-caregiver", methods=["POST"])
 def alert_caregiver():
     global latest_alert
@@ -48,19 +39,18 @@ def alert_caregiver():
     mins       = data.get("minsToHypo")
     glucose    = data.get("glucose")
 
-    # Update latest alert so caregiver polling picks it up
     latest_alert = {
         "risk":      risk,
         "glucose":   glucose,
         "timestamp": time.strftime("%H:%M:%S"),
-        "message":   f"Glucose crash predicted. Confidence {confidence}%."
+        "message":   f"Glucose crash predicted. Confidence {int(confidence*100) if confidence <= 1 else int(confidence)}%."
                      + (f" Estimated {mins} min to hypo." if mins else ""),
     }
 
-    send_push_to_caregiver(caregiver_fcm_token, risk, confidence, mins)
+    socketio.emit("alert_update", latest_alert)
     return jsonify({"status": "Caregiver alerted", "risk": risk})
 
-# ── ROUTE 3: SOS button ───────────────────────────────────────────
+# ── ROUTE 2: SOS button ───────────────────────────────────────────
 @app.route("/sos", methods=["POST"])
 def sos():
     global latest_alert
@@ -72,7 +62,6 @@ def sos():
 
     print(f"SOS RECEIVED [{trigger}]: {maps_link} at {time_val}")
 
-    # Update latest alert for caregiver polling
     latest_alert = {
         "risk":      "high",
         "glucose":   glucose,
@@ -81,17 +70,10 @@ def sos():
                      + (f" Location: {maps_link}" if maps_link else ""),
     }
 
-    if caregiver_fcm_token:
-        send_push_to_caregiver(caregiver_fcm_token, "high", 1.0)
-
+    socketio.emit("alert_update", latest_alert)
     return jsonify({"status": "SOS received", "trigger": trigger})
 
-# ── ROUTE 4: Caregiver page polls this every 30 seconds ──────────
-@app.route("/latest-alert", methods=["GET"])
-def get_latest_alert():
-    return jsonify(latest_alert)
-
-# ── ROUTE 5: Reset alert (call after patient recovers) ───────────
+# ── ROUTE 3: Reset after patient recovers ────────────────────────
 @app.route("/reset-alert", methods=["POST"])
 def reset_alert():
     global latest_alert
@@ -101,14 +83,19 @@ def reset_alert():
         "timestamp": time.strftime("%H:%M:%S"),
         "message":   "Patient glucose stabilised.",
     }
+    socketio.emit("alert_update", latest_alert)
     return jsonify({"status": "Alert reset"})
 
-# ── PING ROUTE — keeps Render awake ──────────────────────────────
+# ── ROUTE 4: Fallback REST for initial load ───────────────────────
+@app.route("/latest-alert", methods=["GET"])
+def get_latest_alert():
+    return jsonify(latest_alert)
+
+# ── PING ──────────────────────────────────────────────────────────
 @app.route("/ping")
 def ping():
     return "ok", 200
 
-# ── SELF PINGER ───────────────────────────────────────────────────
 def keep_alive():
     while True:
         time.sleep(600)

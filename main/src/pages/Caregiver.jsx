@@ -1,92 +1,71 @@
 import React, { useState, useEffect, useRef } from "react";
+import { io } from "socket.io-client";
 import Navbar from "../components/Navbar";
 
 const API_URL = "https://glucera.onrender.com";
-const POLL_INTERVAL = 30000; // 30 seconds
 
 export default function Caregiver() {
-  const [status, setStatus]       = useState("watching"); // watching | alert | safe
-  const [lastAlert, setLastAlert] = useState(null);
-  const [lastChecked, setLastChecked] = useState(null);
+  const [status, setStatus]       = useState("watching");
+  const [alert, setAlert]         = useState(null);
   const [connected, setConnected] = useState(false);
-  const [patientData, setPatientData] = useState(null);
-  const intervalRef = useRef(null);
-  const audioRef = useRef(null);
+  const socketRef = useRef(null);
 
-  // Request notification permission for browser alerts
   useEffect(() => {
+    // Request browser notification permission
     if ("Notification" in window && Notification.permission === "default") {
       Notification.requestPermission();
     }
-  }, []);
 
-  // Start polling
-  useEffect(() => {
-    checkStatus(); // immediate first check
-    intervalRef.current = setInterval(checkStatus, POLL_INTERVAL);
-    return () => clearInterval(intervalRef.current);
-  }, []);
+    // Connect to WebSocket
+    const socket = io(API_URL, { transports: ["websocket"] });
+    socketRef.current = socket;
 
-  async function checkStatus() {
-    try {
-      const res = await fetch(`${API_URL}/latest-alert`);
-      if (!res.ok) throw new Error("Backend unreachable");
-      const data = await res.json();
-
+    socket.on("connect", () => {
       setConnected(true);
-      setLastChecked(new Date().toLocaleTimeString());
-      setPatientData(data);
+      socket.emit("caregiver_join");
+    });
+
+    socket.on("disconnect", () => setConnected(false));
+
+    socket.on("alert_update", (data) => {
+      setAlert(data);
+      setStatus(data.risk === "high" ? "alert" : data.risk === "medium" ? "medium" : "safe");
 
       if (data.risk === "high") {
-        setStatus("alert");
-        setLastAlert(data);
-        triggerAlerts(data);
-      } else if (data.risk === "medium") {
-        setStatus("medium");
-      } else {
-        setStatus("safe");
+        // Browser notification
+        if (Notification.permission === "granted") {
+          new Notification("🚨 Glucera Emergency", {
+            body: `Patient glucose: ${data.glucose} mg/dL — CRITICAL. Immediate action needed.`,
+            icon: "/favicon.png",
+            requireInteraction: true,
+          });
+        }
+        // Voice alert
+        if ("speechSynthesis" in window) {
+          window.speechSynthesis.cancel();
+          const msg = new SpeechSynthesisUtterance(
+            `Emergency. Patient glucose is critically low at ${data.glucose} milligrams per deciliter. Immediate response required.`
+          );
+          msg.rate = 0.9;
+          msg.volume = 1.0;
+          window.speechSynthesis.speak(msg);
+        }
       }
-    } catch (err) {
-      setConnected(false);
-      console.warn("Polling error:", err);
-    }
-  }
+    });
 
-  function triggerAlerts(data) {
-    // Browser notification
-    if (Notification.permission === "granted") {
-      new Notification("🚨 Glucera Emergency", {
-        body: `Patient glucose: ${data.glucose} mg/dL — CRITICAL. Immediate action needed.`,
-        icon: "/favicon.png",
-        requireInteraction: true,
-      });
-    }
+    return () => socket.disconnect();
+  }, []);
 
-    // Voice alert
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const msg = new SpeechSynthesisUtterance(
-        `Emergency alert. Patient glucose is critically low at ${data.glucose} milligrams per deciliter. Immediate response required.`
-      );
-      msg.rate = 0.9;
-      msg.volume = 1.0;
-      window.speechSynthesis.speak(msg);
-    }
-  }
-
-  const statusConfig = {
-    watching: { color: "#76575D", bg: "#f9f5f5", icon: "👁️", label: "Monitoring Patient" },
-    safe:     { color: "#27ae60", bg: "#f0faf4", icon: "✅", label: "Patient is Safe"    },
-    medium:   { color: "#e67e22", bg: "#fef9f0", icon: "⚠️", label: "Caution"           },
-    alert:    { color: "#c0392b", bg: "#fdf0ef", icon: "🚨", label: "EMERGENCY"         },
-  };
-
-  const cfg = statusConfig[status] || statusConfig.watching;
+  const cfg = {
+    watching: { color: "#76575D", bg: "#f9f5f5", icon: "👁️", label: "Monitoring Patient"  },
+    safe:     { color: "#27ae60", bg: "#f0faf4", icon: "✅", label: "Patient is Safe"      },
+    medium:   { color: "#e67e22", bg: "#fef9f0", icon: "⚠️", label: "Caution"             },
+    alert:    { color: "#c0392b", bg: "#fdf0ef", icon: "🚨", label: "EMERGENCY"           },
+  }[status];
 
   return (
     <div style={{ minHeight: "100vh", background: "#f0eaeb", fontFamily: "DM Sans, sans-serif" }}>
       <Navbar />
-
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 20px" }}>
 
         {/* Status card */}
@@ -104,31 +83,26 @@ export default function Caregiver() {
             {cfg.label}
           </h1>
 
-          {patientData && (
-            <div style={{ marginTop: 16 }}>
-              <p style={{ fontSize: 40, fontWeight: 800, color: cfg.color }}>
-                {patientData.glucose} <span style={{ fontSize: 16, color: "#aaa" }}>mg/dL</span>
-              </p>
-              <p style={{ color: "#666", fontSize: 14 }}>
-                Last reading: {patientData.timestamp || lastChecked}
-              </p>
-            </div>
+          {alert?.glucose && (
+            <p style={{ fontSize: 40, fontWeight: 800, color: cfg.color, margin: "16px 0 4px" }}>
+              {alert.glucose} <span style={{ fontSize: 16, color: "#aaa" }}>mg/dL</span>
+            </p>
           )}
 
-          {status === "alert" && lastAlert && (
+          {alert?.message && (
             <div style={{
               background: "#fff",
               borderRadius: 12,
-              padding: "16px",
-              marginTop: 20,
-              border: "1px solid #f5c6c6",
+              padding: 16,
+              marginTop: 16,
+              border: `1px solid ${cfg.color}33`,
             }}>
-              <p style={{ color: "#c0392b", fontWeight: 700, fontSize: 16 }}>
-                ⚠️ Glucose dropped to {lastAlert.glucose} mg/dL
+              <p style={{ color: cfg.color, fontWeight: 600, fontSize: 14, margin: 0 }}>
+                {alert.message}
               </p>
-              <p style={{ color: "#666", fontSize: 13, marginTop: 4 }}>
-                {lastAlert.message || "Patient may need immediate assistance."}
-              </p>
+              {alert.timestamp && (
+                <p style={{ color: "#aaa", fontSize: 12, marginTop: 4 }}>at {alert.timestamp}</p>
+              )}
             </div>
           )}
         </div>
@@ -137,51 +111,27 @@ export default function Caregiver() {
         <div style={{
           background: "#fff",
           borderRadius: 16,
-          padding: "16px 20px",
+          padding: "14px 20px",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          marginBottom: 16,
+          gap: 10,
           boxShadow: "0 2px 8px rgba(0,0,0,0.06)",
+          marginBottom: 12,
         }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-            <div style={{
-              width: 10, height: 10, borderRadius: "50%",
-              background: connected ? "#27ae60" : "#e74c3c",
-              boxShadow: connected ? "0 0 6px #27ae60" : "none",
-            }} />
-            <span style={{ fontSize: 14, color: "#555" }}>
-              {connected ? "Connected to backend" : "Backend unreachable"}
-            </span>
-          </div>
-          <span style={{ fontSize: 12, color: "#aaa" }}>
-            {lastChecked ? `Checked ${lastChecked}` : "Connecting..."}
+          <div style={{
+            width: 10, height: 10, borderRadius: "50%",
+            background: connected ? "#27ae60" : "#e74c3c",
+            boxShadow: connected ? "0 0 6px #27ae60" : "none",
+            flexShrink: 0,
+          }} />
+          <span style={{ fontSize: 14, color: "#555" }}>
+            {connected ? "Live — connected via WebSocket" : "Reconnecting..."}
           </span>
         </div>
 
-        {/* Manual check button */}
-        <button
-          onClick={checkStatus}
-          style={{
-            width: "100%",
-            background: "#76575D",
-            color: "#fff",
-            border: "none",
-            borderRadius: 14,
-            padding: "16px",
-            fontSize: 16,
-            fontWeight: 700,
-            cursor: "pointer",
-            marginBottom: 12,
-          }}
-        >
-          Check Now
-        </button>
-
-        <p style={{ textAlign: "center", color: "#aaa", fontSize: 12 }}>
-          Auto-checks every 30 seconds · Keep this tab open
+        <p style={{ textAlign: "center", color: "#aaa", fontSize: 12, marginTop: 8 }}>
+          Alerts arrive instantly · No refresh needed · Keep this tab open
         </p>
-
       </div>
     </div>
   );
