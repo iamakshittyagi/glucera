@@ -541,3 +541,59 @@
   .stats-row { grid-template-columns: 1fr 1fr; }
   .context-grid { grid-template-columns: 1fr; }
 }
+
+/* ── ADD THESE TO THE BOTTOM OF Dashboard.css ── */
+
+/* Crash prediction box inside risk card */
+.crash-prediction-box {
+  margin-top: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 2px solid;
+  background: rgba(192, 57, 43, 0.05);
+  text-align: center;
+}
+
+.crash-prediction-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+
+.crash-prediction-time {
+  font-size: 2rem;
+  font-weight: 900;
+  line-height: 1;
+  margin-bottom: 6px;
+  font-family: 'Playfair Display', serif;
+}
+
+.crash-prediction-floor {
+  font-size: 0.82rem;
+  color: #888;
+}
+
+.crash-prediction-floor strong {
+  color: #c0392b;
+}
+
+/* Loading / error pills in top bar */
+.dash-loading-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #76575D;
+  background: #f0e8e8;
+  padding: 3px 10px;
+  border-radius: 50px;
+}
+
+.dash-error-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #e67e22;
+  background: #fef9f0;
+  padding: 3px 10px;
+  border-radius: 50px;
+}
