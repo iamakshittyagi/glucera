@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "firebase": "^12.11.0",
     "plotly.js": "^3.5.0",
     "react-plotly.js": "^2.6.0",
     "socket.io-client": "^4.8.3"
