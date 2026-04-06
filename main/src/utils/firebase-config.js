@@ -14,28 +14,51 @@ const firebaseConfig = {
 const VAPID_KEY = "BNlBCMrBhiOY5R6fNgERyhQeEFaI_WgEuLVFE-QkO1WBvtGAJvWKoa-ymTvvTDpF_k8zb9TDt3dv2U17NGVl6jk";
 const API_URL   = "https://glucera.onrender.com";
 
-// Initialize Firebase
-const app       = initializeApp(firebaseConfig);
-const messaging = getMessaging(app);
+// Initialize Firebase app only — NOT messaging (that needs a service worker)
+const app = initializeApp(firebaseConfig);
+
+// Lazy getter — only initializes messaging when actually called
+let _messaging = null;
+function getMessagingInstance() {
+  if (!_messaging) {
+    _messaging = getMessaging(app);
+  }
+  return _messaging;
+}
 
 // ─── REQUEST PERMISSION + GET FCM TOKEN + REGISTER WITH BACKEND ──
 export async function requestNotificationPermission() {
   try {
+    // 1. Check if browser supports notifications
+    if (!("Notification" in window)) {
+      console.warn("This browser does not support notifications");
+      return null;
+    }
+
+    // 2. Check if service worker is supported (required for FCM)
+    if (!("serviceWorker" in navigator)) {
+      console.warn("Service workers not supported");
+      return null;
+    }
+
+    // 3. Request permission — only NOW, not at import time
     const permission = await Notification.requestPermission();
     if (permission !== "granted") {
       console.warn("Notification permission denied");
       return null;
     }
 
-    const token = await getToken(messaging, { vapidKey: VAPID_KEY });
+    // 4. Wait for service worker to be ready
+    await navigator.serviceWorker.ready;
+
+    // 5. Get FCM token
+    const token = await getToken(getMessagingInstance(), { vapidKey: VAPID_KEY });
 
     if (token) {
       console.log("FCM Token:", token);
-
-      // Save locally
       localStorage.setItem("caregiver_token", token);
 
-      // Send to backend so Render can push alerts to this device
+      // 6. Send to backend
       try {
         const res = await fetch(`${API_URL}/register-caregiver`, {
           method:  "POST",
@@ -50,7 +73,7 @@ export async function requestNotificationPermission() {
 
       return token;
     } else {
-      console.warn("No FCM token received");
+      console.warn("No FCM token received — check VAPID key and service worker");
       return null;
     }
   } catch (err) {
@@ -61,10 +84,10 @@ export async function requestNotificationPermission() {
 
 // ─── LISTEN FOR FOREGROUND MESSAGES ──────────────────────────────
 export function onForegroundMessage(callback) {
-  return onMessage(messaging, (payload) => {
+  return onMessage(getMessagingInstance(), (payload) => {
     console.log("Foreground message:", payload);
     callback(payload);
   });
 }
 
-export { messaging };
+export { app };
