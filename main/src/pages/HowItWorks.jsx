@@ -1,44 +1,20 @@
 import React from "react";
 import Navbar from "../components/Navbar";
 import "./HowItWorks.css";
+import CBMIcon from "../assets/Icons/GLUCERACBM.png";
+import AIBotIcon from "../assets/Icons/GLUCERAAIBOT.png";
+import TimeIcon from "../assets/Icons/GLUCERATIME.png";
+import SOSIcon from "../assets/Icons/GLUCERASOS.png";
+import FoodIcon from "../assets/Icons/GLUCERAFOOD.png";
+import GraphIcon from "../assets/Icons/GLUCERAGRAPH.png";
 
 const steps = [
-  {
-    number: "01",
-    icon: "",
-    title: "Upload Your CGM Data",
-    desc: "Export your continuous glucose monitor data as a CSV file. Glucera reads your glucose history, meal times, insulin doses, and exercise patterns.",
-  },
-  {
-    number: "02",
-    icon: "",
-    title: "AI Analyses Your Patterns",
-    desc: "Our model studies your personal trends and time-of-day patterns, how your body responds to insulin, exercise, and meals then predicts the results based on that.",
-  },
-  {
-    number: "03",
-    icon: "",
-    title: "Predicts a Crash Before It Happens",
-    desc: "Glucera forecasts hypoglycaemic episodes minutes before they occur, giving you and your caregiver time to act - not just react.",
-  },
-  {
-    number: "04",
-    icon: "",
-    title: "Sends an Instant SOS Alert",
-    desc: "When risk is high, Glucera sends a real-time push notification to your caregiver's phone, even at 2am, so help is always on the way.",
-  },
-  {
-    number: "05",
-    icon: "",
-    title: "Tells You Exactly What to Eat",
-    desc: "Glucera gives you advices \"Have 3 glucose tablets or a glass of juice now.\" in order to assist you with your daily sugar spikes and improve your life style better, day by day.",
-  },
-  {
-    number: "06",
-    icon: "",
-    title: "Learns and Reports Over Time",
-    desc: "Weekly graphical reports show your patterns, crash history, and improvements — ready to share with your doctor.",
-  },
+  { number: "01", icon: CBMIcon,    title: "Upload Your CGM Data", desc: "Export your continuous glucose monitor data as a CSV file. Glucera reads your glucose history, meal times, insulin doses, and exercise patterns." },
+  { number: "02", icon: AIBotIcon,  title: "AI Analyses Your Patterns", desc: "Our model studies your personal trends and time-of-day patterns, how your body responds to insulin, exercise, and meals then predicts the results based on that." },
+  { number: "03", icon: TimeIcon,   title: "Predicts a Crash Before It Happens", desc: "Glucera forecasts hypoglycaemic episodes minutes before they occur, giving you and your caregiver time to act - not just react." },
+  { number: "04", icon: SOSIcon,    title: "Sends an Instant SOS Alert", desc: "When risk is high, Glucera sends a real-time push notification to your caregiver's phone, even at 2am, so help is always on the way." },
+  { number: "05", icon: FoodIcon,   title: "Tells You Exactly What to Eat", desc: "Glucera gives you advices \"Have 3 glucose tablets or a glass of juice now.\" in order to assist you with your daily sugar spikes and improve your life style better, day by day." },
+  { number: "06", icon: GraphIcon,  title: "Learns and Reports Over Time", desc: "Weekly graphical reports show your patterns, crash history, and improvements — ready to share with your doctor." },
 ];
 
 const faqs = [
