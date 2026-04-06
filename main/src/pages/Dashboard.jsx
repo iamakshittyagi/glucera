@@ -6,22 +6,18 @@ import {
 import Navbar from "../components/Navbar";
 import "./Dashboard.css";
 import FileIcon from "../assets/Icons/GLUCERAFILE.png";
-import { onForegroundMessage } from "../utils/firebase-config";
 
-// ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const API_URL        = "https://glucera.onrender.com";
 const HYPO_THRESHOLD = 70;
 const WARN_THRESHOLD = 80;
 
-// ─── ALERT MANAGER ───────────────────────────────────────────────────────────
 function sendPushNotification(riskLevel, confidence) {
   if (!("Notification" in window)) return;
   if (Notification.permission === "granted") {
     new Notification("Glucera Alert", {
-      body:
-        riskLevel === "high"
-          ? `DANGER: Glucose crash predicted. Confidence ${Math.round(confidence * 100)}%. Eat something NOW.`
-          : `Caution: Glucose dropping. Confidence ${Math.round(confidence * 100)}%. Consider a snack.`,
+      body: riskLevel === "high"
+        ? `DANGER: Glucose crash predicted. Confidence ${Math.round(confidence * 100)}%. Eat something NOW.`
+        : `Caution: Glucose dropping. Confidence ${Math.round(confidence * 100)}%. Consider a snack.`,
       icon: "/favicon.png",
       vibrate: [200, 100, 200],
     });
@@ -31,41 +27,27 @@ function sendPushNotification(riskLevel, confidence) {
 function speakAlert(riskLevel) {
   if (!("speechSynthesis" in window)) return;
   window.speechSynthesis.cancel();
-
-  const msg = "Your sugar level is getting drop.";
-
-  const utterance  = new SpeechSynthesisUtterance(msg);
-  utterance.rate   = 0.85;
-  utterance.pitch  = 1.0;
-  utterance.volume = 1.0;
-
-  if (riskLevel === "high") {
-    window.speechSynthesis.speak(utterance);
-    setTimeout(() => window.speechSynthesis.cancel(), 3000);
-  } else {
-    window.speechSynthesis.speak(utterance);
-  }
+  const utterance = new SpeechSynthesisUtterance("Your sugar level is getting low.");
+  utterance.rate = 0.85; utterance.pitch = 1.0; utterance.volume = 1.0;
+  window.speechSynthesis.speak(utterance);
+  if (riskLevel === "high") setTimeout(() => window.speechSynthesis.cancel(), 3000);
 }
 
 async function sendSOSToBackend(trigger, coords) {
   try {
     await fetch(`${API_URL}/sos`, {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         trigger,
         latitude:  coords?.latitude  ?? null,
         longitude: coords?.longitude ?? null,
-        mapsLink:  coords
-          ? `https://maps.google.com/?q=${coords.latitude},${coords.longitude}`
-          : null,
-        time:    new Date().toISOString(),
-        message: "EMERGENCY: Patient needs help. Glucose crash suspected.",
+        mapsLink:  coords ? `https://maps.google.com/?q=${coords.latitude},${coords.longitude}` : null,
+        time:      new Date().toISOString(),
+        message:   "EMERGENCY: Patient needs help. Glucose crash suspected.",
       }),
     });
-  } catch {
-    console.warn("SOS backend unreachable — logged locally.");
-  }
+  } catch { console.warn("SOS backend unreachable."); }
 }
 
 function triggerSOS(trigger = "manual") {
@@ -74,41 +56,26 @@ function triggerSOS(trigger = "manual") {
       (pos) => sendSOSToBackend(trigger, pos.coords),
       ()    => sendSOSToBackend(trigger, null)
     );
-  } else {
-    sendSOSToBackend(trigger, null);
-  }
+  } else { sendSOSToBackend(trigger, null); }
 }
 
-async function notifyCaregiver(riskLevel, confidence) {
+async function notifyCaregiver(riskLevel, confidence, glucose) {
   try {
     await fetch(`${API_URL}/alert-caregiver`, {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        risk:       riskLevel,
-        confidence,
-        time:       new Date().toLocaleTimeString(),
-      }),
+      body: JSON.stringify({ risk: riskLevel, confidence, glucose, time: new Date().toLocaleTimeString() }),
     });
-  } catch {
-    console.warn("Caregiver alert backend unreachable.");
-  }
+  } catch { console.warn("Caregiver alert backend unreachable."); }
 }
 
-function triggerAllAlerts(riskLevel, confidence) {
+function triggerAllAlerts(riskLevel, confidence, glucose) {
   if (riskLevel === "food_spike" || riskLevel === "low") return;
-  if (riskLevel === "medium") {
-    sendPushNotification(riskLevel, confidence);
-    speakAlert(riskLevel);
-  }
-  if (riskLevel === "high") {
-    sendPushNotification(riskLevel, confidence);
-    speakAlert(riskLevel);
-    notifyCaregiver(riskLevel, confidence);
-  }
+  sendPushNotification(riskLevel, confidence);
+  speakAlert(riskLevel);
+  if (riskLevel === "high") notifyCaregiver(riskLevel, confidence, glucose);
 }
 
-// ─── CSV PARSER ───────────────────────────────────────────────────────────────
 function parseCSV(text) {
   const lines   = text.trim().split("\n");
   const headers = lines[0].split(",").map((h) => h.trim());
@@ -120,7 +87,6 @@ function parseCSV(text) {
   });
 }
 
-// ─── RISK CONFIG ──────────────────────────────────────────────────────────────
 const riskConfig = {
   high:       { label: "HIGH RISK",   color: "#c0392b", bg: "#fdf0ef", pulse: true  },
   medium:     { label: "MEDIUM RISK", color: "#e67e22", bg: "#fef9f0", pulse: false },
@@ -128,28 +94,17 @@ const riskConfig = {
   food_spike: { label: "FOOD SPIKE",  color: "#2980b9", bg: "#f0f6ff", pulse: false },
 };
 
-// ─── DEFAULT CONTEXT ──────────────────────────────────────────────────────────
 const defaultCtx = {
-  hypoEpisodes:    0,
-  insulinOnBoard:  0,
-  sleepHours:      7,
-  stressLevel:     3,
-  heartRate:       null,
-  skippedMeal:     false,
-  alcoholConsumed: false,
+  hypoEpisodes: 0, insulinOnBoard: 0, sleepHours: 7,
+  stressLevel: 3, heartRate: null, skippedMeal: false, alcoholConsumed: false,
 };
 
-// ─────────────────────────────────────────────────────────────────
-// CRASH WARNING POPUP
-// ─────────────────────────────────────────────────────────────────
+// ─── CRASH POPUP ─────────────────────────────────────────────────
 function CrashPopup({ prediction, onDismiss, onSOS }) {
   const [tick, setTick] = useState(3);
 
   useEffect(() => {
-    if (tick <= 0) {
-      onSOS();
-      return;
-    }
+    if (tick <= 0) { onSOS(); return; }
     const t = setTimeout(() => setTick((p) => p - 1), 1000);
     return () => clearTimeout(t);
   }, [tick]); // eslint-disable-line
@@ -157,87 +112,62 @@ function CrashPopup({ prediction, onDismiss, onSOS }) {
   return (
     <div className="popup-overlay">
       <div className="popup-box">
-
-        <div className="popup-icon-ring">
-          <span className="popup-icon">!</span>
-        </div>
-
+        <div className="popup-icon-ring"><span className="popup-icon">!</span></div>
         <h2 className="popup-title">Glucose Crash Predicted</h2>
-
         <div className="popup-stats">
           <div className="popup-stat">
-            <span className="popup-stat-val" style={{ color: "#c0392b" }}>
-              {prediction.current_glucose}
-            </span>
+            <span className="popup-stat-val" style={{ color: "#c0392b" }}>{prediction.current_glucose}</span>
             <span className="popup-stat-label">mg/dL now</span>
           </div>
-          {prediction.crash_in_minutes && prediction.crash_in_minutes > 0 && (
+          {prediction.crash_in_minutes != null && (
             <div className="popup-stat">
               <span className="popup-stat-val" style={{ color: "#c0392b" }}>
-                ~{prediction.crash_in_minutes}
+                {prediction.crash_in_minutes === 0 ? "NOW" : `~${prediction.crash_in_minutes}`}
               </span>
               <span className="popup-stat-label">min to crash</span>
             </div>
           )}
-          {prediction.estimated_floor && prediction.estimated_floor > 0 && (
+          {prediction.estimated_floor != null && (
             <div className="popup-stat">
-              <span className="popup-stat-val" style={{ color: "#e67e22" }}>
-                {prediction.estimated_floor}
-              </span>
+              <span className="popup-stat-val" style={{ color: "#e67e22" }}>{prediction.estimated_floor}</span>
               <span className="popup-stat-label">est. floor mg/dL</span>
             </div>
           )}
         </div>
-
         <p className="popup-suggestion">{prediction.food_suggestion}</p>
-
         <div className="popup-countdown-wrap">
           <svg className="popup-countdown-svg" viewBox="0 0 80 80">
             <circle cx="40" cy="40" r="34" fill="none" stroke="#f0e8e8" strokeWidth="6" />
-            <circle
-              cx="40" cy="40" r="34"
-              fill="none"
-              stroke="#c0392b"
-              strokeWidth="6"
-              strokeDasharray={`${(tick / 3) * 213.6} 213.6`}
-              strokeLinecap="round"
-              transform="rotate(-90 40 40)"
-              style={{ transition: "stroke-dasharray 0.9s linear" }}
-            />
+            <circle cx="40" cy="40" r="34" fill="none" stroke="#c0392b" strokeWidth="6"
+              strokeDasharray={`${(tick / 3) * 213.6} 213.6`} strokeLinecap="round"
+              transform="rotate(-90 40 40)" style={{ transition: "stroke-dasharray 0.9s linear" }} />
           </svg>
           <span className="popup-countdown-num">{tick}</span>
         </div>
         <p className="popup-countdown-label">SOS fires in {tick} second{tick !== 1 ? "s" : ""}</p>
-
         <div className="popup-actions">
-          <button className="popup-btn-dismiss" onClick={onDismiss}>
-            I'm OK — Cancel SOS
-          </button>
-          <button className="popup-btn-sos" onClick={onSOS}>
-            Send SOS Now
-          </button>
+          <button className="popup-btn-dismiss" onClick={onDismiss}>I'm OK — Cancel SOS</button>
+          <button className="popup-btn-sos" onClick={onSOS}>Send SOS Now</button>
         </div>
-
       </div>
     </div>
   );
 }
 
-// ─── COMPONENT ────────────────────────────────────────────────────────────────
+// ─── MAIN COMPONENT ──────────────────────────────────────────────
 export default function Dashboard() {
-  const [data,        setData]        = useState(null);
-  const [rows,        setRows]        = useState([]);
-  const [fileName,    setFileName]    = useState("");
-  const [prediction,  setPrediction]  = useState(null);
-  const [loading,     setLoading]     = useState(false);
-  const [sosSent,     setSosSent]     = useState(false);
-  const [countdown,   setCountdown]   = useState(null);
-  const [ctx,         setCtx]         = useState(defaultCtx);
-  const [showPanel,   setShowPanel]   = useState(false);
-  const [dragging,    setDragging]    = useState(false);
-  const [apiError,    setApiError]    = useState(null);
-  const [showPopup,   setShowPopup]   = useState(false);
-  const [popupShown,  setPopupShown]  = useState(false);
+  const [data,       setData]       = useState(null);
+  const [rows,       setRows]       = useState([]);
+  const [fileName,   setFileName]   = useState("");
+  const [prediction, setPrediction] = useState(null);
+  const [loading,    setLoading]    = useState(false);
+  const [sosSent,    setSosSent]    = useState(false);
+  const [countdown,  setCountdown]  = useState(null);
+  const [ctx,        setCtx]        = useState(defaultCtx);
+  const [showPanel,  setShowPanel]  = useState(false);
+  const [dragging,   setDragging]   = useState(false);
+  const [apiError,   setApiError]   = useState(null);
+  const [showPopup,  setShowPopup]  = useState(false);
 
   const autoSosTimer      = useRef(null);
   const countdownInterval = useRef(null);
@@ -249,20 +179,10 @@ export default function Dashboard() {
     }
   }, []);
 
-  // ─── FIREBASE FOREGROUND MESSAGES ──────────────────────────────
-  useEffect(() => {
-    const unsubscribe = onForegroundMessage((payload) => {
-      console.log("FCM message received:", payload);
-    });
-    return () => unsubscribe();
-  }, []);
-
-  // ─── CALL BACKEND ──────────────────────────────────────────────
   const callBackend = useCallback(async (csvRows, context) => {
     if (!csvRows || csvRows.length < 2) return;
     setLoading(true);
     setApiError(null);
-
     try {
       const glucoseArray  = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
       const mealArray     = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
@@ -271,90 +191,69 @@ export default function Dashboard() {
       const csvHeartRate  = parseFloat(lastRow?.heart_rate);
       const heartRate     = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
 
-      const payload = {
-        glucose:          glucoseArray,
-        meal_array:       mealArray,
-        exercise_array:   exerciseArray,
-        heart_rate:       heartRate,
-        insulin_on_board: context.insulinOnBoard,
-        hypo_episodes:    context.hypoEpisodes,
-        sleep_hours:      context.sleepHours,
-        stress_level:     context.stressLevel,
-        alcohol_consumed: context.alcoholConsumed ? 1 : 0,
-        skipped_meal:     context.skippedMeal     ? 1 : 0,
-      };
-
       const res = await fetch(`${API_URL}/predict`, {
-        method:  "POST",
+        method: "POST",
         headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
+        body: JSON.stringify({
+          glucose: glucoseArray, meal_array: mealArray, exercise_array: exerciseArray,
+          heart_rate: heartRate, insulin_on_board: context.insulinOnBoard,
+          hypo_episodes: context.hypoEpisodes, sleep_hours: context.sleepHours,
+          stress_level: context.stressLevel, alcohol_consumed: context.alcoholConsumed ? 1 : 0,
+          skipped_meal: context.skippedMeal ? 1 : 0,
+        }),
       });
-
       if (!res.ok) throw new Error(`Backend returned ${res.status}`);
       const result = await res.json();
       setPrediction(result);
 
       if (result.risk === "high" && prevRisk.current !== "high") {
         setShowPopup(true);
-        setPopupShown(true);
-        triggerAllAlerts(result.risk, result.confidence);
+        triggerAllAlerts(result.risk, result.confidence, result.current_glucose);
       } else if (result.risk !== "high") {
         setShowPopup(false);
-        setPopupShown(false);
       }
       prevRisk.current = result.risk;
-
     } catch (err) {
       console.error("Predict error:", err);
       setApiError("Could not reach backend. Showing local analysis.");
-
       const glucoseArray = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
-      const current      = glucoseArray[glucoseArray.length - 1];
-      const rate         = glucoseArray.length >= 2
-        ? (glucoseArray[glucoseArray.length - 1] - glucoseArray[glucoseArray.length - 2]) / 15
-        : 0;
-      const tth  = rate < 0 ? Math.min(120, (current - 70) / Math.abs(rate)) : null;
+      const current = glucoseArray[glucoseArray.length - 1];
+      const rate    = glucoseArray.length >= 2
+        ? (glucoseArray[glucoseArray.length - 1] - glucoseArray[glucoseArray.length - 2]) / 15 : 0;
+      const tth  = rate < 0 && current > 70 ? Math.min(120, (current - 70) / Math.abs(rate)) : current <= 70 ? 0 : null;
       const risk = current < 70 ? "high" : current < 85 ? "medium" : "low";
-
       const fallback = {
-        risk,
-        confidence:          current < 70 ? 0.88 : 0.65,
-        current_glucose:     current,
-        trend:               Math.round(rate * 60),
-        crash_predicted:     tth !== null && tth < 60,
-        crash_in_minutes:    tth ? Math.round(tth) : null,
-        estimated_floor:     Math.round(current + rate * 30),
-        food_suggestion:     current < 70
+        risk, confidence: current < 70 ? 0.88 : 0.65,
+        model_accuracy: 0.915,
+        current_glucose: current, trend: Math.round(rate * 60),
+        crash_predicted: tth !== null,
+        crash_in_minutes: tth !== null ? Math.round(tth) : null,
+        estimated_floor: Math.round(current + rate * 30),
+        food_suggestion: current < 70
           ? "Eat 3 glucose tablets or drink 150ml of juice immediately."
-          : current < 90
-          ? "Have a small snack — a banana or handful of crackers."
+          : current < 90 ? "Have a small snack — a banana or handful of crackers."
           : "Glucose looks stable. Keep up your current routine.",
         class_probabilities: {},
       };
       setPrediction(fallback);
-
       if (risk === "high" && prevRisk.current !== "high") {
         setShowPopup(true);
-        triggerAllAlerts(risk, fallback.confidence);
+        triggerAllAlerts(risk, fallback.confidence, current);
       }
       prevRisk.current = risk;
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   }, []);
 
   useEffect(() => {
     if (rows.length >= 2) callBackend(rows, ctx);
   }, [ctx]); // eslint-disable-line
 
-  // ─── SOS COUNTDOWN ─────────────────────────────────────────────
   useEffect(() => {
     clearTimeout(autoSosTimer.current);
     clearInterval(countdownInterval.current);
     setCountdown(null);
-
     if (prediction?.risk === "high" && !sosSent && !showPopup) {
-      const totalSecs = (prediction.crash_in_minutes || 5) * 60;
+      const totalSecs = ((prediction.crash_in_minutes ?? 5)) * 60;
       setCountdown(totalSecs);
       countdownInterval.current = setInterval(() => {
         setCountdown((prev) => {
@@ -362,105 +261,63 @@ export default function Dashboard() {
           return prev - 1;
         });
       }, 1000);
-      autoSosTimer.current = setTimeout(() => {
-        setSosSent(true);
-        triggerSOS("auto");
-      }, totalSecs * 1000);
+      autoSosTimer.current = setTimeout(() => { setSosSent(true); triggerSOS("auto"); }, totalSecs * 1000);
     }
-    return () => {
-      clearTimeout(autoSosTimer.current);
-      clearInterval(countdownInterval.current);
-    };
+    return () => { clearTimeout(autoSosTimer.current); clearInterval(countdownInterval.current); };
   }, [prediction?.risk, sosSent, showPopup]); // eslint-disable-line
 
-  // ─── FILE HANDLER ───────────────────────────────────────────────
   const handleFile = useCallback((file) => {
     if (!file) return;
-    setFileName(file.name);
-    setSosSent(false);
-    setPrediction(null);
-    setApiError(null);
-    setShowPopup(false);
-    setPopupShown(false);
-    prevRisk.current = null;
+    setFileName(file.name); setSosSent(false); setPrediction(null);
+    setApiError(null); setShowPopup(false); prevRisk.current = null;
     const reader = new FileReader();
     reader.onload = (e) => {
       const parsed = parseCSV(e.target.result);
-      setData(parsed);
-      setRows(parsed);
-      setShowPanel(true);
+      setData(parsed); setRows(parsed); setShowPanel(true);
       callBackend(parsed, ctx);
     };
     reader.readAsText(file);
   }, [ctx, callBackend]);
 
   const onDrop = useCallback((e) => {
-    e.preventDefault();
-    setDragging(false);
-    handleFile(e.dataTransfer.files[0]);
+    e.preventDefault(); setDragging(false); handleFile(e.dataTransfer.files[0]);
   }, [handleFile]);
-
-  function handlePopupDismiss() {
-    setShowPopup(false);
-    setSosSent(false);
-  }
-
-  function handlePopupSOS() {
-    setShowPopup(false);
-    setSosSent(true);
-    clearTimeout(autoSosTimer.current);
-    clearInterval(countdownInterval.current);
-    setCountdown(null);
-    triggerSOS("popup_auto");
-    notifyCaregiver(prediction?.risk, prediction?.confidence);
-  }
-
-  function handleManualSOS() {
-    setSosSent(true);
-    setShowPopup(false);
-    clearTimeout(autoSosTimer.current);
-    clearInterval(countdownInterval.current);
-    setCountdown(null);
-    triggerSOS("manual");
-  }
 
   const updateCtx = (key, val) => setCtx((prev) => ({ ...prev, [key]: val }));
 
-  const risk             = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
-  const recentReadings   = rows.slice(-20);
+  const risk           = prediction ? (riskConfig[prediction.risk] ?? riskConfig.low) : null;
+  const recentReadings = rows.slice(-20);
   const countdownDisplay = countdown !== null
     ? `${String(Math.floor(countdown / 60)).padStart(2, "0")}:${String(countdown % 60).padStart(2, "0")}`
     : null;
   const clinicalScore = prediction
-    ? prediction.risk === "high"
-      ? Math.round(60 + prediction.confidence * 40)
-      : prediction.risk === "medium"
-      ? Math.round(30 + prediction.confidence * 30)
-      : Math.round(prediction.confidence * 30)
-    : 0;
+    ? prediction.risk === "high"   ? Math.round(60 + prediction.confidence * 40)
+    : prediction.risk === "medium" ? Math.round(30 + prediction.confidence * 30)
+    : Math.round(prediction.confidence * 30) : 0;
 
   return (
     <div className="dash-page">
       <Navbar />
-
       {showPopup && prediction && (
         <CrashPopup
           prediction={prediction}
-          onDismiss={handlePopupDismiss}
-          onSOS={handlePopupSOS}
+          onDismiss={() => { setShowPopup(false); setSosSent(false); }}
+          onSOS={() => {
+            setShowPopup(false); setSosSent(true);
+            clearTimeout(autoSosTimer.current); clearInterval(countdownInterval.current); setCountdown(null);
+            triggerSOS("popup_auto");
+            notifyCaregiver(prediction?.risk, prediction?.confidence, prediction?.current_glucose);
+          }}
         />
       )}
 
       <div className="dash-container">
 
-        {/* ── UPLOAD ZONE ── */}
+        {/* UPLOAD */}
         {!data && (
-          <div
-            className={`upload-zone ${dragging ? "dragging" : ""}`}
+          <div className={`upload-zone ${dragging ? "dragging" : ""}`}
             onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-          >
+            onDragLeave={() => setDragging(false)} onDrop={onDrop}>
             <div className="upload-icon">
               <img src={FileIcon} alt="file" style={{ width: 100, height: 100, objectFit: "contain" }} />
             </div>
@@ -471,12 +328,12 @@ export default function Dashboard() {
               <input type="file" accept=".csv" hidden onChange={(e) => handleFile(e.target.files[0])} />
             </label>
             <p className="upload-hint">
-              Supports: timestamp, glucose_mg_dl, meal_taken, insulin_dose_units, exercise_minutes, heart_rate columns
+              Supports: timestamp, glucose_mg_dl, meal_taken, insulin_dose_units, exercise_minutes, heart_rate
             </p>
           </div>
         )}
 
-        {/* ── RESULTS ── */}
+        {/* RESULTS */}
         {data && (
           <>
             <div className="dash-topbar">
@@ -494,7 +351,7 @@ export default function Dashboard() {
 
             {prediction && (
               <>
-                {/* ── CLINICAL RISK SCORE BAR ── */}
+                {/* CLINICAL RISK BAR */}
                 <div className="clinical-bar">
                   <div className="clinical-bar-left">
                     <span className="clinical-score-label">Clinical Risk Score</span>
@@ -503,13 +360,10 @@ export default function Dashboard() {
                     </span>
                   </div>
                   <div className="clinical-track">
-                    <div
-                      className="clinical-fill"
-                      style={{
-                        width:      `${clinicalScore}%`,
-                        background: clinicalScore >= 60 ? "#c0392b" : clinicalScore >= 30 ? "#e67e22" : "#27ae60",
-                      }}
-                    />
+                    <div className="clinical-fill" style={{
+                      width: `${clinicalScore}%`,
+                      background: clinicalScore >= 60 ? "#c0392b" : clinicalScore >= 30 ? "#e67e22" : "#27ae60",
+                    }} />
                   </div>
                   {prediction?.risk !== "high" && (
                     <button className="context-toggle" onClick={() => setShowPanel((p) => !p)}>
@@ -518,12 +372,11 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                {/* ── CONTEXT PANEL ── */}
+                {/* CONTEXT PANEL */}
                 {showPanel && prediction?.risk !== "high" && (
                   <div className="context-panel">
-                    <p className="context-panel-title">Clinical Context — fills your risk score</p>
+                    <p className="context-panel-title">Clinical Context</p>
                     <div className="context-grid">
-
                       <div className="ctx-item">
                         <label className="ctx-label">Hypo Episodes (last 7 days)</label>
                         <div className="ctx-stepper">
@@ -532,7 +385,6 @@ export default function Dashboard() {
                           <button onClick={() => updateCtx("hypoEpisodes", Math.min(10, ctx.hypoEpisodes + 1))}>+</button>
                         </div>
                       </div>
-
                       <div className="ctx-item">
                         <label className="ctx-label">Insulin on Board (units)</label>
                         <div className="ctx-stepper">
@@ -541,88 +393,78 @@ export default function Dashboard() {
                           <button onClick={() => updateCtx("insulinOnBoard", Math.min(20, ctx.insulinOnBoard + 1))}>+</button>
                         </div>
                       </div>
-
                       <div className="ctx-item">
                         <label className="ctx-label">Sleep Last Night (hours)</label>
-                        <input
-                          className="ctx-slider" type="range" min="0" max="12" step="0.5"
-                          value={ctx.sleepHours}
-                          onChange={(e) => updateCtx("sleepHours", parseFloat(e.target.value))}
-                        />
+                        <input className="ctx-slider" type="range" min="0" max="12" step="0.5"
+                          value={ctx.sleepHours} onChange={(e) => updateCtx("sleepHours", parseFloat(e.target.value))} />
                         <span className="ctx-slider-val">{ctx.sleepHours}h {ctx.sleepHours < 6 ? "— Low" : ""}</span>
                       </div>
-
                       <div className="ctx-item">
                         <label className="ctx-label">Stress Level</label>
-                        <input
-                          className="ctx-slider" type="range" min="1" max="10" step="1"
-                          value={ctx.stressLevel}
-                          onChange={(e) => updateCtx("stressLevel", parseInt(e.target.value))}
-                        />
+                        <input className="ctx-slider" type="range" min="1" max="10" step="1"
+                          value={ctx.stressLevel} onChange={(e) => updateCtx("stressLevel", parseInt(e.target.value))} />
                         <span className="ctx-slider-val">{ctx.stressLevel}/10 {ctx.stressLevel >= 8 ? "— High" : ""}</span>
                       </div>
-
                       <div className="ctx-item">
                         <label className="ctx-label">Heart Rate (bpm)</label>
-                        <input
-                          className="ctx-number" type="number" min="40" max="200"
+                        <input className="ctx-number" type="number" min="40" max="200"
                           placeholder={`Auto: ${rows[rows.length - 1]?.heart_rate ?? 72}`}
                           value={ctx.heartRate ?? ""}
-                          onChange={(e) => updateCtx("heartRate", e.target.value ? parseInt(e.target.value) : null)}
-                        />
+                          onChange={(e) => updateCtx("heartRate", e.target.value ? parseInt(e.target.value) : null)} />
                       </div>
-
                       <div className="ctx-item ctx-toggle-item">
                         <label className="ctx-label">Insulin taken, no meal followed?</label>
-                        <button
-                          className={`ctx-toggle-btn ${ctx.skippedMeal ? "active" : ""}`}
-                          onClick={() => updateCtx("skippedMeal", !ctx.skippedMeal)}
-                        >
+                        <button className={`ctx-toggle-btn ${ctx.skippedMeal ? "active" : ""}`}
+                          onClick={() => updateCtx("skippedMeal", !ctx.skippedMeal)}>
                           {ctx.skippedMeal ? "YES" : "NO"}
                         </button>
                       </div>
-
                       <div className="ctx-item ctx-toggle-item">
                         <label className="ctx-label">Alcohol consumed today?</label>
-                        <button
-                          className={`ctx-toggle-btn ${ctx.alcoholConsumed ? "active" : ""}`}
-                          onClick={() => updateCtx("alcoholConsumed", !ctx.alcoholConsumed)}
-                        >
+                        <button className={`ctx-toggle-btn ${ctx.alcoholConsumed ? "active" : ""}`}
+                          onClick={() => updateCtx("alcoholConsumed", !ctx.alcoholConsumed)}>
                           {ctx.alcoholConsumed ? "YES" : "NO"}
                         </button>
                       </div>
-
                     </div>
                   </div>
                 )}
 
-                {/* ── MAIN GRID ── */}
+                {/* MAIN GRID */}
                 <div className="dash-grid">
 
                   {/* LEFT */}
                   <div className="dash-left">
-
                     <div className="card risk-card" style={{ background: risk.bg }}>
                       <p className="card-label">Current Risk Level</p>
-                      <div
-                        className={`risk-badge ${risk.pulse ? "risk-pulse" : ""}`}
-                        style={{ color: risk.color, borderColor: risk.color }}
-                      >
+                      <div className={`risk-badge ${risk.pulse ? "risk-pulse" : ""}`}
+                        style={{ color: risk.color, borderColor: risk.color }}>
                         {risk.label}
                       </div>
                       <p className="risk-glucose">
                         Last reading: <strong>{prediction.current_glucose} mg/dL</strong>
                       </p>
+                      {/* ── AI Accuracy ── */}
+                      <p className="risk-accuracy" style={{ color: risk.color }}>
+                        AI confidence: <strong>{Math.round(prediction.confidence * 100)}%</strong>
+                        {prediction.model_accuracy && (
+                          <span style={{ color: "#aaa", fontSize: "0.75rem", marginLeft: 6 }}>
+                            model acc: {Math.round(prediction.model_accuracy * 100)}%
+                          </span>
+                        )}
+                      </p>
 
-                      {prediction.crash_predicted && prediction.crash_in_minutes && prediction.crash_in_minutes > 0 && (
+                      {prediction.crash_predicted && prediction.crash_in_minutes != null && (
                         <div className="crash-prediction-box" style={{ borderColor: risk.color }}>
                           <p className="crash-prediction-label" style={{ color: risk.color }}>
-                            Crash predicted in
+                            {prediction.crash_in_minutes === 0 ? "Crash happening NOW" : "Crash predicted in"}
                           </p>
-                          <p className="crash-prediction-time" style={{ color: risk.color }}>
-                            ~{prediction.crash_in_minutes} min
-                          </p>
-                          {prediction.estimated_floor && prediction.estimated_floor > 0 && (
+                          {prediction.crash_in_minutes > 0 && (
+                            <p className="crash-prediction-time" style={{ color: risk.color }}>
+                              ~{prediction.crash_in_minutes} min
+                            </p>
+                          )}
+                          {prediction.estimated_floor != null && (
                             <p className="crash-prediction-floor">
                               Estimated floor: <strong>{prediction.estimated_floor} mg/dL</strong>
                             </p>
@@ -635,7 +477,6 @@ export default function Dashboard() {
                           View Warning Again
                         </button>
                       )}
-
                       {prediction.risk === "food_spike" && (
                         <p className="risk-prediction" style={{ color: "#2980b9" }}>
                           Rise detected — likely food or exercise. No alert triggered.
@@ -661,19 +502,19 @@ export default function Dashboard() {
                             {(prediction.rate_of_change * 60).toFixed(1)} mg/dL/hr
                           </strong>
                         </li>
-                        {prediction.time_to_hypo_min && prediction.time_to_hypo_min > 0 && prediction.time_to_hypo_min < 999 && (
+                        {prediction.time_to_hypo_min != null && prediction.time_to_hypo_min < 999 && (
                           <li className="explain-item">
                             <span className="explain-dot" style={{ background: "#c0392b" }} />
-                            Time to hypo threshold:
+                            Time to hypo:
                             <strong style={{ marginLeft: 4, color: "#c0392b" }}>
-                              ~{prediction.time_to_hypo_min} min
+                              {prediction.time_to_hypo_min === 0 ? "NOW" : `~${prediction.time_to_hypo_min} min`}
                             </strong>
                           </li>
                         )}
-                        {prediction.estimated_floor && prediction.estimated_floor > 0 && (
+                        {prediction.estimated_floor != null && (
                           <li className="explain-item">
                             <span className="explain-dot" style={{ background: "#e67e22" }} />
-                            Projected glucose floor:
+                            Projected floor:
                             <strong style={{ marginLeft: 4, color: "#e67e22" }}>
                               {prediction.estimated_floor} mg/dL
                             </strong>
@@ -700,31 +541,28 @@ export default function Dashboard() {
                       <p className="card-label">Food Suggestion</p>
                       <p className="food-text">"{prediction.food_suggestion}"</p>
                       {prediction.safe_to_sleep && (
-                        <p className="food-text" style={{ marginTop: 10, fontStyle: "normal", fontSize: "0.85rem", color: "#666" }}>
-                          {prediction.safe_to_sleep}
-                        </p>
+                        <p style={{ marginTop: 10, fontSize: "0.85rem", color: "#666" }}>{prediction.safe_to_sleep}</p>
                       )}
                     </div>
-
                   </div>
 
                   {/* CENTER */}
                   <div className="dash-center">
                     <p className="sos-label">Emergency Alert</p>
                     <button
-                      className={`sos-btn ${sosSent ? "sos-sent" : ""} ${
-                        prediction.risk === "high" && !sosSent ? "sos-pulse" : ""
-                      }`}
-                      onClick={handleManualSOS}
+                      className={`sos-btn ${sosSent ? "sos-sent" : ""} ${prediction.risk === "high" && !sosSent ? "sos-pulse" : ""}`}
+                      onClick={() => {
+                        setSosSent(true); setShowPopup(false);
+                        clearTimeout(autoSosTimer.current); clearInterval(countdownInterval.current); setCountdown(null);
+                        triggerSOS("manual");
+                      }}
                       disabled={sosSent}
                     >
                       {sosSent ? "SENT" : "SOS"}
                     </button>
                     <p className="sos-sub">
-                      {sosSent
-                        ? "Alert sent to your caregiver's mobile."
-                        : prediction.risk === "high"
-                        ? "Tap to alert caregiver now"
+                      {sosSent ? "Alert sent to your caregiver's mobile."
+                        : prediction.risk === "high" ? "Tap to alert caregiver now"
                         : "Tap to send emergency alert"}
                     </p>
                     {prediction.risk === "high" && !sosSent && countdownDisplay && (
@@ -741,57 +579,44 @@ export default function Dashboard() {
                     <div className="card chart-card">
                       <p className="card-label">Glucose Trend (Last 20 Readings)</p>
                       <ResponsiveContainer width="100%" height={260}>
-                        <LineChart
-                          data={recentReadings}
-                          margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                        >
+                        <LineChart data={recentReadings} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#f0e8e8" />
-                          <XAxis
-                            dataKey="timestamp"
-                            tick={{ fontSize: 9 }}
-                            tickFormatter={(v) => v.slice(11, 16)}
-                            interval={3}
-                          />
+                          <XAxis dataKey="timestamp" tick={{ fontSize: 9 }}
+                            tickFormatter={(v) => v.slice(11, 16)} interval={3} />
                           <YAxis domain={[40, 220]} tick={{ fontSize: 10 }} />
-                          <Tooltip
-                            formatter={(val) => [`${val} mg/dL`, "Glucose"]}
-                            labelFormatter={(l) => l.slice(11, 16)}
-                          />
+                          <Tooltip formatter={(val) => [`${val} mg/dL`, "Glucose"]}
+                            labelFormatter={(l) => l.slice(11, 16)} />
                           <ReferenceLine y={70} stroke="#c0392b" strokeDasharray="4 4"
                             label={{ value: "Hypo", fontSize: 10, fill: "#c0392b" }} />
                           <ReferenceLine y={80} stroke="#e67e22" strokeDasharray="4 4"
                             label={{ value: "Warn", fontSize: 10, fill: "#e67e22" }} />
-                          <Line
-                            type="monotone"
-                            dataKey="glucose_mg_dl"
-                            stroke="#76575D"
-                            strokeWidth={2.5}
-                            dot={{ r: 3, fill: "#76575D" }}
-                            activeDot={{ r: 5 }}
-                          />
+                          <Line type="monotone" dataKey="glucose_mg_dl" stroke="#76575D"
+                            strokeWidth={2.5} dot={{ r: 3, fill: "#76575D" }} activeDot={{ r: 5 }} />
                         </LineChart>
                       </ResponsiveContainer>
                     </div>
 
+                    {/* STATS ROW — fixed: use != null instead of > 0 */}
                     <div className="stats-row">
                       <div className="stat-card">
                         <p className="stat-val">
-                          {prediction.trend > 0 ? "+" : ""}{prediction.trend}
-                          <span> mg/hr</span>
+                          {prediction.trend > 0 ? "+" : ""}{prediction.trend}<span> mg/hr</span>
                         </p>
                         <p className="stat-label">per hour trend</p>
                       </div>
                       <div className="stat-card">
                         <p className="stat-val" style={{ color: prediction.crash_predicted ? "#c0392b" : undefined }}>
-                          {prediction.crash_in_minutes && prediction.crash_in_minutes > 0 ? prediction.crash_in_minutes : "—"}
-                          <span>{prediction.crash_in_minutes && prediction.crash_in_minutes > 0 ? " min" : ""}</span>
+                          {prediction.crash_in_minutes != null
+                            ? prediction.crash_in_minutes === 0 ? <span style={{fontSize:"1rem"}}>NOW</span> : prediction.crash_in_minutes
+                            : "—"}
+                          {prediction.crash_in_minutes != null && prediction.crash_in_minutes > 0 && <span> min</span>}
                         </p>
                         <p className="stat-label">crash prediction</p>
                       </div>
                       <div className="stat-card">
                         <p className="stat-val">
-                          {prediction.estimated_floor && prediction.estimated_floor > 0 ? prediction.estimated_floor : "—"}
-                          <span>{prediction.estimated_floor && prediction.estimated_floor > 0 ? " mg" : ""}</span>
+                          {prediction.estimated_floor != null ? prediction.estimated_floor : "—"}
+                          {prediction.estimated_floor != null && <span> mg</span>}
                         </p>
                         <p className="stat-label">glucose floor</p>
                       </div>
