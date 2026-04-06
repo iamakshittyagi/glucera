@@ -661,7 +661,7 @@ export default function Dashboard() {
                             {(prediction.rate_of_change * 60).toFixed(1)} mg/dL/hr
                           </strong>
                         </li>
-                        {prediction.time_to_hypo_min && (
+                        {prediction.time_to_hypo_min && prediction.time_to_hypo_min > 0 && prediction.time_to_hypo_min < 999 && (
                           <li className="explain-item">
                             <span className="explain-dot" style={{ background: "#c0392b" }} />
                             Time to hypo threshold:
