@@ -58,9 +58,9 @@ export default function Caregiver() {
 
   const cfg = {
     watching: { color: "#76575D", bg: "#f9f5f5", icon: "", label: "Monitoring Patient"  },
-    safe:     { color: "#27ae60", bg: "#f0faf4", icon: "✅", label: "Patient is Safe"      },
-    medium:   { color: "#e67e22", bg: "#fef9f0", icon: "⚠️", label: "Caution"             },
-    alert:    { color: "#c0392b", bg: "#fdf0ef", icon: "🚨", label: "EMERGENCY"           },
+    safe:     { color: "#27ae60", bg: "#f0faf4", icon: "", label: "Patient is Safe"      },
+    medium:   { color: "#e67e22", bg: "#fef9f0", icon: "", label: "Caution"             },
+    alert:    { color: "#c0392b", bg: "#fdf0ef", icon: "", label: "EMERGENCY"           },
   }[status];
 
   return (
