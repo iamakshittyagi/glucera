@@ -199,7 +199,11 @@
   object-fit: contain;
   margin-bottom: 10px;
 }
-
+.hiw-step-icon {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+}
 .hiw-callout-icon-img {
   width: 48px;
   height: 48px;
