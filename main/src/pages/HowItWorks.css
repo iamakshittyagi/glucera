@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
 
 .hiw-page {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Aldrich', sans-serif;
   background: #f0eaeb;
   min-height: 100vh;
 }
@@ -28,7 +27,7 @@
 }
 
 .hiw-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Aldrich', sans-serif;
   font-size: clamp(2rem, 5vw, 3.2rem);
   font-weight: 900;
   color: #3a2528;
@@ -156,7 +155,7 @@
 
 /* ── FAQ ── */
 .hiw-faq-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Aldrich', sans-serif;
   font-size: 1.6rem;
   font-weight: 700;
   color: #3a2528;

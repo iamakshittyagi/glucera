@@ -4,12 +4,24 @@ import {
   Tooltip, ReferenceLine, ResponsiveContainer
 } from "recharts";
 import Navbar from "../components/Navbar";
+import DemoBanner from "../components/DemoBanner";
 import "./Dashboard.css";
 import FileIcon from "../assets/Icons/GLUCERAFILE.png";
 
-const API_URL        = "https://glucera.onrender.com";
+import { apiFetch, apiPostQuiet, probeBackend } from "../utils/backend";
+import { predictLocally } from "../utils/demoEngine";
+
+// Bundled sample data, so the demo is usable with nothing to upload.
+import stableDayCsv from "../assets/demo/stable-day.csv?raw";
+import nightCrashCsv from "../assets/demo/night-crash.csv?raw";
+
 const HYPO_THRESHOLD = 70;
 const WARN_THRESHOLD = 80;
+
+const DEMO_FILES = [
+  { key: "stable", name: "stable-day.csv",  label: "Stable Day",     hint: "A normal day — no alerts", csv: stableDayCsv },
+  { key: "crash",  name: "night-crash.csv", label: "Overnight Crash", hint: "Triggers the full alert flow", csv: nightCrashCsv },
+];
 
 function sendPushNotification(riskLevel, confidence) {
   if (!("Notification" in window)) return;
@@ -34,20 +46,16 @@ function speakAlert(riskLevel) {
 }
 
 async function sendSOSToBackend(trigger, coords) {
-  try {
-    await fetch(`${API_URL}/sos`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        trigger,
-        latitude:  coords?.latitude  ?? null,
-        longitude: coords?.longitude ?? null,
-        mapsLink:  coords ? `https://maps.google.com/?q=${coords.latitude},${coords.longitude}` : null,
-        time:      new Date().toISOString(),
-        message:   "EMERGENCY: Patient needs help. Glucose crash suspected.",
-      }),
-    });
-  } catch { console.warn("SOS backend unreachable."); }
+  // apiPostQuiet never throws — in demo mode the SOS is simply not delivered
+  // anywhere, but the on-screen flow stays identical.
+  await apiPostQuiet("/sos", {
+    trigger,
+    latitude:  coords?.latitude  ?? null,
+    longitude: coords?.longitude ?? null,
+    mapsLink:  coords ? `https://maps.google.com/?q=${coords.latitude},${coords.longitude}` : null,
+    time:      new Date().toISOString(),
+    message:   "EMERGENCY: Patient needs help. Glucose crash suspected.",
+  });
 }
 
 function triggerSOS(trigger = "manual") {
@@ -60,13 +68,9 @@ function triggerSOS(trigger = "manual") {
 }
 
 async function notifyCaregiver(riskLevel, confidence, glucose) {
-  try {
-    await fetch(`${API_URL}/alert-caregiver`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ risk: riskLevel, confidence, glucose, time: new Date().toLocaleTimeString() }),
-    });
-  } catch { console.warn("Caregiver alert backend unreachable."); }
+  await apiPostQuiet("/alert-caregiver", {
+    risk: riskLevel, confidence, glucose, time: new Date().toLocaleTimeString(),
+  });
 }
 
 function triggerAllAlerts(riskLevel, confidence, glucose) {
@@ -183,74 +187,74 @@ export default function Dashboard() {
     if (!csvRows || csvRows.length < 2) return;
     setLoading(true);
     setApiError(null);
-    try {
-      const glucoseArray  = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
-      const mealArray     = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
-      const exerciseArray = csvRows.map((r) => (parseFloat(r.exercise_minutes) > 0 ? 1 : 0));
-      const lastRow       = csvRows[csvRows.length - 1];
-      const csvHeartRate  = parseFloat(lastRow?.heart_rate);
-      const heartRate     = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
 
-      const res = await fetch(`${API_URL}/predict`, {
+    const glucoseArray  = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
+    const mealArray     = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
+    const exerciseArray = csvRows.map((r) => (parseFloat(r.exercise_minutes) > 0 ? 1 : 0));
+    const lastRow       = csvRows[csvRows.length - 1];
+    const csvHeartRate  = parseFloat(lastRow?.heart_rate);
+    const heartRate     = context.heartRate ?? (isNaN(csvHeartRate) ? 72 : csvHeartRate);
+
+    const payload = {
+      glucose: glucoseArray, meal_array: mealArray, exercise_array: exerciseArray,
+      heart_rate: heartRate, insulin_on_board: context.insulinOnBoard,
+      hypo_episodes: context.hypoEpisodes, sleep_hours: context.sleepHours,
+      stress_level: context.stressLevel, alcohol_consumed: context.alcoholConsumed ? 1 : 0,
+      skipped_meal: context.skippedMeal ? 1 : 0,
+    };
+
+    // Real model first; the local engine takes over the moment the API misses
+    // its deadline, so the demo never shows a dead screen.
+    let result;
+    try {
+      const res = await apiFetch("/predict", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          glucose: glucoseArray, meal_array: mealArray, exercise_array: exerciseArray,
-          heart_rate: heartRate, insulin_on_board: context.insulinOnBoard,
-          hypo_episodes: context.hypoEpisodes, sleep_hours: context.sleepHours,
-          stress_level: context.stressLevel, alcohol_consumed: context.alcoholConsumed ? 1 : 0,
-          skipped_meal: context.skippedMeal ? 1 : 0,
-        }),
+        body: JSON.stringify(payload),
       });
-      if (!res.ok) throw new Error(`Backend returned ${res.status}`);
-      const result = await res.json();
-      setPrediction(result);
-
-      if (result.risk === "high" && prevRisk.current !== "high") {
-        setShowPopup(true);
-        triggerAllAlerts(result.risk, result.confidence, result.current_glucose);
-      } else if (result.risk !== "high") {
-        setShowPopup(false);
-      }
-      prevRisk.current = result.risk;
+      result = await res.json();
     } catch (err) {
-      console.error("Predict error:", err);
-      setApiError("Could not reach backend. Showing local analysis.");
-      const glucoseArray = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
-      const current = glucoseArray[glucoseArray.length - 1];
-      const rate    = glucoseArray.length >= 2
-        ? (glucoseArray[glucoseArray.length - 1] - glucoseArray[glucoseArray.length - 2]) / 15 : 0;
-      const tth  = rate < 0 && current > 70 ? Math.min(120, (current - 70) / Math.abs(rate)) : current <= 70 ? 0 : null;
-      const risk = current < 70 ? "high" : current < 85 ? "medium" : "low";
-      const fallback = {
-        risk, confidence: current < 70 ? 0.88 : 0.65,
-        model_accuracy: 0.915,
-        current_glucose: current, trend: Math.round(rate * 60),
-        crash_predicted: tth !== null,
-        crash_in_minutes: tth !== null ? Math.round(tth) : null,
-        estimated_floor: Math.round(current + rate * 30),
-        food_suggestion: current < 70
-          ? "Eat 3 glucose tablets or drink 150ml of juice immediately."
-          : current < 90 ? "Have a small snack — a banana or handful of crackers."
-          : "Glucose looks stable. Keep up your current routine.",
-        class_probabilities: {},
-      };
-      setPrediction(fallback);
-      if (risk === "high" && prevRisk.current !== "high") {
-        setShowPopup(true);
-        triggerAllAlerts(risk, fallback.confidence, current);
-      }
-      prevRisk.current = risk;
-    } finally { setLoading(false); }
+      console.warn("Backend unavailable, using local demo engine:", err.message);
+      setApiError("Demo mode — analysed locally, no trained model involved.");
+      result = predictLocally(payload);
+    }
+
+    setPrediction(result);
+    if (result.risk === "high" && prevRisk.current !== "high") {
+      setShowPopup(true);
+      triggerAllAlerts(result.risk, result.confidence, result.current_glucose);
+    } else if (result.risk !== "high") {
+      setShowPopup(false);
+    }
+    prevRisk.current = result.risk;
+    setLoading(false);
   }, []);
 
+  // Warm the backend as soon as the dashboard opens, so the first prediction
+  // isn't the one that pays for Render's cold start.
+  useEffect(() => { probeBackend(); }, []);
+
+  const loadDemoFile = useCallback((demo) => {
+    setFileName(demo.name); setSosSent(false); setPrediction(null);
+    setApiError(null); setShowPopup(false); prevRisk.current = null;
+    const parsed = parseCSV(demo.csv);
+    setData(parsed); setRows(parsed); setShowPanel(true);
+    callBackend(parsed, ctx);
+  }, [ctx, callBackend]);
+
+  // Re-run the prediction whenever the clinical context sliders change.
+  // callBackend flips `loading` synchronously, which is the intent here.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (rows.length >= 2) callBackend(rows, ctx);
   }, [ctx]); // eslint-disable-line
 
+  // Drives the auto-SOS timer. This is timer synchronisation — the countdown
+  // must reset the moment the risk level changes, before the next tick.
   useEffect(() => {
     clearTimeout(autoSosTimer.current);
     clearInterval(countdownInterval.current);
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCountdown(null);
     if (prediction?.risk === "high" && !sosSent && !showPopup) {
       const totalSecs = ((prediction.crash_in_minutes ?? 5)) * 60;
@@ -298,6 +302,7 @@ export default function Dashboard() {
   return (
     <div className="dash-page">
       <Navbar />
+      <DemoBanner />
       {showPopup && prediction && (
         <CrashPopup
           prediction={prediction}
@@ -330,6 +335,19 @@ export default function Dashboard() {
             <p className="upload-hint">
               Supports: timestamp, glucose_mg_dl, meal_taken, insulin_dose_units, exercise_minutes, heart_rate
             </p>
+
+            {/* No data of your own? Every part of the demo is reachable from here. */}
+            <div className="demo-picker">
+              <p className="demo-picker-label">No file? Load a sample scenario</p>
+              <div className="demo-picker-row">
+                {DEMO_FILES.map((d) => (
+                  <button key={d.key} className="demo-picker-btn" onClick={() => loadDemoFile(d)}>
+                    <span className="demo-picker-btn-title">{d.label}</span>
+                    <span className="demo-picker-btn-hint">{d.hint}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
@@ -343,10 +361,22 @@ export default function Dashboard() {
                 {loading && <span className="dash-loading-pill">Analysing...</span>}
                 {apiError && <span className="dash-error-pill">{apiError}</span>}
               </div>
-              <label className="dash-reupload">
-                Upload New File
-                <input type="file" accept=".csv" hidden onChange={(e) => handleFile(e.target.files[0])} />
-              </label>
+              <div className="dash-topbar-actions">
+                {DEMO_FILES.map((d) => (
+                  <button
+                    key={d.key}
+                    className={`dash-demo-switch ${fileName === d.name ? "active" : ""}`}
+                    onClick={() => loadDemoFile(d)}
+                    title={d.hint}
+                  >
+                    {d.label}
+                  </button>
+                ))}
+                <label className="dash-reupload">
+                  Upload New File
+                  <input type="file" accept=".csv" hidden onChange={(e) => handleFile(e.target.files[0])} />
+                </label>
+              </div>
             </div>
 
             {prediction && (
@@ -636,7 +666,9 @@ export default function Dashboard() {
             {loading && !prediction && (
               <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
                 <p style={{ color: "#76575D", fontWeight: 600 }}>Analysing your glucose data</p>
-                <p style={{ color: "#aaa", fontSize: "0.85rem" }}>Connecting to Glucera AI backend</p>
+                <p style={{ color: "#aaa", fontSize: "0.85rem" }}>
+                  Contacting the Glucera AI backend — falling back to local analysis if it doesn't answer
+                </p>
               </div>
             )}
           </>

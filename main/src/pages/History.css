@@ -1,7 +1,6 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
 
 .history-page {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Aldrich', sans-serif;
   background: #f0eaeb;
   min-height: 100vh;
 }
@@ -23,7 +22,7 @@
 }
 
 .history-title {
-  font-family: 'Playfair Display', serif;
+  font-family: 'Aldrich', sans-serif;
   font-size: 2rem;
   font-weight: 700;
   color: #3a2528;
@@ -42,7 +41,7 @@
 }
 
 .filter-btn {
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Aldrich', sans-serif;
   font-size: 0.85rem;
   font-weight: 600;
   padding: 8px 20px;

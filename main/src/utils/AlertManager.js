@@ -1,6 +1,8 @@
 // AlertManager.js
 // One function to rule all alerts
 
+import { apiPostQuiet } from "./backend";
+
 // ---------- PUSH NOTIFICATION ----------
 export function sendPushNotification(riskLevel, confidence) {
   if (Notification.permission === "granted") {
@@ -37,12 +39,9 @@ export async function notifyCaregiver(riskLevel, confidence, location = null) {
     location: location || "location not available"
   };
 
-  // Send to your Node.js backend which forwards via Firebase
-  await fetch("http://localhost:5000/alert-caregiver", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload)
-  });
+  // Goes to the Flask backend, which forwards to the caregiver via Firebase.
+  // Resolves either way — an unreachable backend must not break the alert chain.
+  await apiPostQuiet("/alert-caregiver", payload);
 }
 
 // ---------- MASTER TRIGGER ----------

@@ -1,87 +1,118 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { io } from "socket.io-client";
 import Navbar from "../components/Navbar";
+import DemoBanner from "../components/DemoBanner";
+import { API_URL, apiJson, apiPostQuiet } from "../utils/backend";
+import { startDemoStream, readingToAlert } from "../utils/demoEngine";
 
-const API_URL = "https://glucera.onrender.com";
+// How long to wait for the live socket before running the local simulation.
+const SOCKET_GRACE_MS = 10000;
+
+// Fires the browser notification + spoken alert. Depends on no component
+// state, so it lives at module scope and is safe to call from any callback.
+function fireAlerts(data) {
+  if ("Notification" in window && Notification.permission === "granted") {
+    new Notification("🚨 Glucera Emergency", {
+      body: `Patient glucose: ${data.glucose} mg/dL — CRITICAL. Immediate action needed.`,
+      icon: "/favicon.png",
+      requireInteraction: true,
+    });
+  }
+  if ("speechSynthesis" in window) {
+    window.speechSynthesis.cancel();
+    const msg = new SpeechSynthesisUtterance(
+      `Emergency. Patient glucose is critically low at ${data.glucose} milligrams per deciliter. Immediate response required.`
+    );
+    msg.rate = 0.9;
+    msg.volume = 1.0;
+    window.speechSynthesis.speak(msg);
+  }
+}
 
 export default function Caregiver() {
   const [status,    setStatus]    = useState("watching");
   const [alert,     setAlert]     = useState(null);
   const [connected, setConnected] = useState(false);
+  const [demoFeed,  setDemoFeed]  = useState(false);
   const socketRef = useRef(null);
+  const prevRisk  = useRef(null);
 
-  useEffect(() => {
-    if ("Notification" in window && Notification.permission === "default") {
-      Notification.requestPermission();
-    }
-
-    // ── Fetch current state on load (REST fallback) ───────────────
-    fetch(`${API_URL}/latest-alert`)
-      .then((r) => r.json())
-      .then((data) => {
-        applyAlert(data);
-      })
-      .catch(() => {});
-
-    // ── Connect WebSocket ─────────────────────────────────────────
-    const socket = io(API_URL, { transports: ["websocket"] });
-    socketRef.current = socket;
-
-    socket.on("connect", () => {
-      setConnected(true);
-      socket.emit("caregiver_join");
-    });
-
-    socket.on("disconnect", () => setConnected(false));
-
-    socket.on("alert_update", (data) => {
-      applyAlert(data);
-    });
-
-    return () => socket.disconnect();
-  }, []);
-
-  function applyAlert(data) {
+  const applyAlert = useCallback((data) => {
+    if (!data) return;
     setAlert(data);
 
     if (data.risk === "high") {
       setStatus("alert");
-      fireAlerts(data);
+      // Only announce on the transition into high — otherwise a 3s feed would
+      // restart the siren and the speech on every single tick.
+      if (prevRisk.current !== "high") fireAlerts(data);
     } else if (data.risk === "medium") {
       setStatus("medium");
     } else {
       // low or null — patient is safe / recovered
       setStatus(data.glucose ? "safe" : "watching");
     }
-  }
+    prevRisk.current = data.risk;
+  }, []);
 
-  function fireAlerts(data) {
-    if (Notification.permission === "granted") {
-      new Notification("🚨 Glucera Emergency", {
-        body: `Patient glucose: ${data.glucose} mg/dL — CRITICAL. Immediate action needed.`,
-        icon: "/favicon.png",
-        requireInteraction: true,
-      });
+  useEffect(() => {
+    if ("Notification" in window && Notification.permission === "default") {
+      Notification.requestPermission();
     }
-    if ("speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
-      const msg = new SpeechSynthesisUtterance(
-        `Emergency. Patient glucose is critically low at ${data.glucose} milligrams per deciliter. Immediate response required.`
-      );
-      msg.rate = 0.9;
-      msg.volume = 1.0;
-      window.speechSynthesis.speak(msg);
-    }
-  }
+
+    let stopDemo = null;
+
+    const startDemo = () => {
+      if (stopDemo) return;
+      setDemoFeed(true);
+      stopDemo = startDemoStream((reading) => applyAlert(readingToAlert(reading)), 4000);
+    };
+
+    const stopDemoFeed = () => {
+      if (!stopDemo) return;
+      stopDemo();
+      stopDemo = null;
+      setDemoFeed(false);
+    };
+
+    // ── Snapshot of current state (REST) ──────────────────────────
+    apiJson("/latest-alert").then(applyAlert).catch(() => {});
+
+    // ── Live WebSocket ────────────────────────────────────────────
+    const socket = io(API_URL, {
+      transports: ["websocket"],
+      timeout: 8000,
+      reconnectionAttempts: 4,
+      reconnectionDelay: 2000,
+    });
+    socketRef.current = socket;
+
+    socket.on("connect", () => {
+      setConnected(true);
+      stopDemoFeed();          // real data wins the moment it arrives
+      socket.emit("caregiver_join");
+    });
+    socket.on("disconnect", () => setConnected(false));
+    socket.on("connect_error", () => setConnected(false));
+    socket.on("alert_update", applyAlert);
+
+    // ── Demo fallback if the socket never comes up ────────────────
+    const graceTimer = setTimeout(() => {
+      if (!socket.connected) startDemo();
+    }, SOCKET_GRACE_MS);
+
+    return () => {
+      clearTimeout(graceTimer);
+      socket.disconnect();
+      if (stopDemo) stopDemo();
+    };
+  }, [applyAlert]);
 
   // ── Manual reset button ───────────────────────────────────────
   async function handleReset() {
-    try {
-      await fetch(`${API_URL}/reset-alert`, { method: "POST" });
-    } catch {
-      // optimistic reset even if backend unreachable
-    }
+    await apiPostQuiet("/reset-alert");   // optimistic — never blocks the UI
     setStatus("safe");
+    prevRisk.current = "low";
     setAlert({ risk: "low", glucose: null, timestamp: new Date().toLocaleTimeString(), message: "Manually marked as safe." });
   }
 
@@ -94,9 +125,10 @@ export default function Caregiver() {
   const cfg = cfgMap[status] || cfgMap.watching;
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f0eaeb", fontFamily: "DM Sans, sans-serif" }}>
+    <div style={{ minHeight: "100vh", background: "#f0eaeb", fontFamily: "'Aldrich', sans-serif" }}>
       <Navbar />
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 20px" }}>
+      <DemoBanner />
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "12px 20px 32px" }}>
 
         {/* ── STATUS CARD ── */}
         <div style={{
@@ -170,17 +202,23 @@ export default function Caregiver() {
         }}>
           <div style={{
             width: 10, height: 10, borderRadius: "50%",
-            background: connected ? "#27ae60" : "#e74c3c",
+            background: connected ? "#27ae60" : demoFeed ? "#2980b9" : "#e74c3c",
             boxShadow: connected ? "0 0 6px #27ae60" : "none",
             flexShrink: 0,
           }} />
           <span style={{ fontSize: 14, color: "#555" }}>
-            {connected ? "Live — connected via WebSocket" : "Reconnecting..."}
+            {connected
+              ? "Live — connected via WebSocket"
+              : demoFeed
+              ? "Demo feed — simulated patient, backend offline"
+              : "Connecting to the patient's monitor..."}
           </span>
         </div>
 
         <p style={{ textAlign: "center", color: "#aaa", fontSize: 12, marginTop: 8 }}>
-          Alerts arrive instantly · No refresh needed · Keep this tab open
+          {demoFeed
+            ? "Simulated readings every 4s so the alert flow can be demonstrated end to end."
+            : "Alerts arrive instantly · No refresh needed · Keep this tab open"}
         </p>
       </div>
     </div>

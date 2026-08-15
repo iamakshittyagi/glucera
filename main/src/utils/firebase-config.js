@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
+import { apiPostQuiet } from "./backend";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD24t9psjfV0z9LW2tTjilKkKD_CW8ecO8",
@@ -12,7 +13,6 @@ const firebaseConfig = {
 };
 
 const VAPID_KEY = "BNlBCMrBhiOY5R6fNgERyhQeEFaI_WgEuLVFE-QkO1WBvtGAJvWKoa-ymTvvTDpF_k8zb9TDt3dv2U17NGVl6jk";
-const API_URL   = "https://glucera.onrender.com";
 
 // Initialize Firebase app only — NOT messaging (that needs a service worker)
 const app = initializeApp(firebaseConfig);
@@ -58,18 +58,10 @@ export async function requestNotificationPermission() {
       console.log("FCM Token:", token);
       localStorage.setItem("caregiver_token", token);
 
-      // 6. Send to backend
-      try {
-        const res = await fetch(`${API_URL}/register-caregiver`, {
-          method:  "POST",
-          headers: { "Content-Type": "application/json" },
-          body:    JSON.stringify({ token }),
-        });
-        const data = await res.json();
-        console.log("Caregiver registered on backend:", data);
-      } catch (err) {
-        console.warn("Could not register token with backend:", err);
-      }
+      // 6. Register with the backend. In demo mode this is a no-op — the token
+      //    still lives in localStorage, so foreground alerts keep working.
+      const registered = await apiPostQuiet("/register-caregiver", { token });
+      if (!registered) console.warn("Demo mode — caregiver token not registered with backend.");
 
       return token;
     } else {

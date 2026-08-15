@@ -1,77 +1,282 @@
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap');
+/* ═══════════════════════════════════════════════════════════════
+   GLUCERA HEADER
+   Two variants share one layout:
+     .gl-nav--overlay  transparent, painted straight onto the hero video
+     .gl-nav--solid    glass panel for pages with no video behind it
+═══════════════════════════════════════════════════════════════ */
 
-.top-nav {
+.gl-nav {
+  --nav-h: 74px;
+  position: relative;
+  z-index: 20;
+  height: var(--nav-h);
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 12px 24px 12px 20px;
-  background: #fff;
-  border-radius: 50px;
-  margin: 16px 16px 12px;
-  box-shadow: 0 2px 16px rgba(80, 40, 50, 0.08);
+  gap: 24px;
+  padding: 0 28px;
+  font-family: 'Aldrich', sans-serif;
 }
 
-.top-nav-logo {
+/* ── Logo ── */
+.gl-nav-logo {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
   text-decoration: none;
-  background: none;
-  border: none;
-  padding: 0;
 }
 
-.nav-logo-img {
-  height: 82px;
+.gl-nav-logo-img {
+  height: 46px;
+  width: auto;
   object-fit: contain;
+  transition: opacity 0.2s;
 }
 
-.top-nav-links {
+.gl-nav-logo:hover .gl-nav-logo-img { opacity: 0.82; }
+
+/* ── Links ── */
+.gl-nav-links {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 2px;
+  margin-right: auto;
 }
 
-.top-nav-link {
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.88rem;
-  color: #555;
+.gl-nav-link {
+  position: relative;
+  font-size: 0.82rem;
+  letter-spacing: 0.02em;
   text-decoration: none;
-  font-weight: 500;
-  padding: 8px 18px;
+  padding: 9px 16px;
   border-radius: 50px;
-  border: 1.5px solid transparent;
-  transition: all 0.2s;
+  transition: color 0.2s, background 0.2s;
 }
 
-.top-nav-link:hover {
+/* Understated underline instead of a filled pill — reads cleanly on video. */
+.gl-nav-link::after {
+  content: "";
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 4px;
+  height: 1.5px;
+  border-radius: 2px;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.25s ease;
+}
+
+.gl-nav-link:hover::after,
+.gl-nav-link.active::after { transform: scaleX(1); }
+
+/* ── Right cluster ── */
+.gl-nav-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.gl-nav-cta {
+  font-size: 0.8rem;
+  letter-spacing: 0.02em;
+  padding: 10px 22px;
+  border-radius: 50px;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.2s, color 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+
+.gl-nav-cta:hover { transform: translateY(-1px); }
+
+/* ── Burger (mobile only) ── */
+.gl-nav-burger {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  width: 42px;
+  height: 42px;
+  padding: 0 9px;
+  border: none;
+  border-radius: 50px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.gl-nav-burger span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  border-radius: 2px;
+  transition: transform 0.25s ease, opacity 0.2s ease;
+}
+
+.is-open .gl-nav-burger span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.is-open .gl-nav-burger span:nth-child(2) { opacity: 0; }
+.is-open .gl-nav-burger span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+/* ── Mobile drawer ── */
+.gl-nav-drawer {
+  position: absolute;
+  top: var(--nav-h);
+  left: 12px;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(118, 87, 93, 0.14);
+  box-shadow: 0 12px 40px rgba(40, 20, 25, 0.18);
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-8px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+.is-open .gl-nav-drawer {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.gl-nav-drawer-link {
+  padding: 13px 16px;
+  border-radius: 12px;
+  font-size: 0.9rem;
+  color: #5a4147;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+
+.gl-nav-drawer-link:hover,
+.gl-nav-drawer-link.active {
   background: #f5f0f1;
-  border-color: #e0d0d2;
   color: #76575D;
 }
 
-.top-nav-link.active {
-  background: #f5f0f1;
-  border-color: #e0d0d2;
-  color: #76575D;
-  font-weight: 600;
-}
-
-.top-nav-cta {
+.gl-nav-drawer-cta {
+  margin-top: 6px;
+  padding: 13px 16px;
+  border-radius: 12px;
+  text-align: center;
+  font-size: 0.9rem;
   background: #76575D;
   color: #fff;
-  font-family: 'DM Sans', sans-serif;
-  font-size: 0.88rem;
-  font-weight: 600;
-  padding: 10px 24px;
-  border-radius: 50px;
   text-decoration: none;
-  transition: background 0.2s, transform 0.2s;
 }
 
-.top-nav-cta:hover {
+/* ═══════════════════════════════════════
+   VARIANT: OVERLAY  (on the hero video)
+═══════════════════════════════════════ */
+/* No background, no border — the hero video runs straight through it. */
+.gl-nav--overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Once scrolled, a soft veil keeps the links legible. It lives on a pseudo
+   element behind the content and fades to nothing at the bottom, so it never
+   reads as a bar or a dividing line — just a gradual darkening of the video. */
+.gl-nav--overlay.is-scrolled { position: fixed; }
+
+.gl-nav--overlay.is-scrolled::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background: linear-gradient(
+    to bottom,
+    rgba(22, 13, 16, 0.72) 0%,
+    rgba(22, 13, 16, 0.42) 55%,
+    rgba(22, 13, 16, 0) 100%
+  );
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  -webkit-mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 50%, transparent 100%);
+}
+
+.gl-nav--overlay .gl-nav-logo-img {
+  /* The logo art is dark; lift it to white so it reads on the video. */
+  filter: brightness(0) invert(1);
+}
+
+.gl-nav--overlay .gl-nav-link {
+  color: rgba(255, 255, 255, 0.78);
+}
+
+.gl-nav--overlay .gl-nav-link:hover,
+.gl-nav--overlay .gl-nav-link.active {
+  color: #fff;
+}
+
+.gl-nav--overlay .gl-nav-link::after { background: #fff; }
+
+.gl-nav--overlay .gl-nav-cta {
+  background: #fff;
+  color: #3d2a2f;
+}
+
+.gl-nav--overlay .gl-nav-cta:hover {
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.gl-nav--overlay .gl-nav-burger span { background: #fff; }
+
+/* ═══════════════════════════════════════
+   VARIANT: SOLID  (interior pages)
+═══════════════════════════════════════ */
+.gl-nav--solid {
+  position: sticky;
+  top: 0;
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border-bottom: 1px solid rgba(118, 87, 93, 0.12);
+}
+
+.gl-nav--solid .gl-nav-link { color: #6d5a5f; }
+
+.gl-nav--solid .gl-nav-link:hover,
+.gl-nav--solid .gl-nav-link.active { color: #76575D; }
+
+.gl-nav--solid .gl-nav-link::after { background: #76575D; }
+
+.gl-nav--solid .gl-nav-cta {
+  background: #76575D;
+  color: #fff;
+}
+
+.gl-nav--solid .gl-nav-cta:hover {
   background: #5e4449;
-  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(118, 87, 93, 0.3);
 }
 
-@media (max-width: 600px) {
-  .top-nav { margin: 10px; padding: 10px 16px; }
-  .top-nav-links { display: none; }
+.gl-nav--solid .gl-nav-burger span { background: #76575D; }
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+═══════════════════════════════════════ */
+@media (max-width: 940px) {
+  .gl-nav { gap: 12px; padding: 0 18px; }
+  .gl-nav-links { display: none; }
+  .gl-nav-burger { display: flex; }
+  .gl-nav-logo { margin-right: auto; }
+}
+
+@media (max-width: 520px) {
+  .gl-nav { --nav-h: 66px; padding: 0 14px; }
+  .gl-nav-logo-img { height: 38px; }
+  .gl-nav-cta { display: none; }  /* the drawer carries the CTA on mobile */
 }

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Navbar from "../components/Navbar";
+import DemoBanner from "../components/DemoBanner";
 import "./History.css";
 
 // Synced with: glucera_dummy_data.csv + large_cgm_data.csv + glucera_critical_data.csv
@@ -211,6 +212,7 @@ export default function History() {
   return (
     <div className="history-page">
       <Navbar />
+      <DemoBanner />
       <div className="history-container">
 
         {/* Header */}

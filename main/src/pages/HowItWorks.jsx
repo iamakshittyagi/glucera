@@ -1,5 +1,6 @@
 import React from "react";
 import Navbar from "../components/Navbar";
+import DemoBanner from "../components/DemoBanner";
 import "./HowItWorks.css";
 import CBMIcon from "../assets/Icons/GLUCERACBM.png";
 import AIBotIcon from "../assets/Icons/GLUCERAAIBOT.png";
@@ -40,6 +41,7 @@ export default function HowItWorks() {
   return (
     <div className="hiw-page">
       <Navbar />
+      <DemoBanner />
       <div className="hiw-container">
 
         {/* Hero */}

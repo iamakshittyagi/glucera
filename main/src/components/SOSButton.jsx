@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { apiPostQuiet } from "../utils/backend";
 
 export default function SOSButton() {
   const [status, setStatus] = useState("idle"); // idle | locating | sent | error
@@ -16,17 +17,14 @@ export default function SOSButton() {
         const { latitude, longitude } = position.coords;
         const mapsLink = `https://maps.google.com/?q=${latitude},${longitude}`;
 
-        // Send to backend → backend notifies caregiver
-        await fetch("http://localhost:5000/sos", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            latitude,
-            longitude,
-            mapsLink,
-            time: new Date().toISOString(),
-            message: "EMERGENCY: Patient needs help. Glucose crash suspected."
-          })
+        // Send to backend → backend notifies caregiver.
+        // Never throws, so the button always reaches a terminal state.
+        await apiPostQuiet("/sos", {
+          latitude,
+          longitude,
+          mapsLink,
+          time: new Date().toISOString(),
+          message: "EMERGENCY: Patient needs help. Glucose crash suspected."
         });
 
         setStatus("sent");
