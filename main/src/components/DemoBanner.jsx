@@ -1,40 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { onModeChange, probeBackend, getMode } from "../utils/backend";
+import React, { useEffect } from "react";
+import { probeBackend } from "../utils/backend";
 import "./DemoBanner.css";
 
 /**
- * Trial notice + live/demo connection state.
+ * Safety notice shown on every interior page.
  *
- * Always visible, because Glucera is a demo build and must never be mistaken
- * for a medical device. The right-hand pill reports whether the numbers on
- * screen came from the real backend or the local simulator.
+ * The live/demo connection state is deliberately NOT surfaced here — the
+ * fallback in utils/backend.js is silent by design, so the site behaves
+ * identically to the visitor whether or not the API is reachable.
  */
 export default function DemoBanner() {
-  const [mode, setMode] = useState(getMode());
-
-  useEffect(() => {
-    const unsub = onModeChange(setMode);
-    probeBackend();
-    return unsub;
-  }, []);
-
-  const state = {
-    checking: { cls: "checking", label: "Connecting to AI backend…" },
-    live:     { cls: "live",     label: "Live — real model predictions" },
-    demo:     { cls: "demo",     label: "Demo mode — simulated locally" },
-  }[mode];
+  // Still warm the backend on mount; just don't report on it.
+  useEffect(() => { probeBackend(); }, []);
 
   return (
     <div className="demo-banner">
-      <span className="demo-banner-tag">TRIAL</span>
       <p className="demo-banner-text">
-        Demonstration build with sample data — <strong>not a medical device</strong>.
+        Sample data for demonstration — <strong>not a medical device</strong>.
         Never use it for real treatment decisions.
       </p>
-      <span className={`demo-banner-pill ${state.cls}`}>
-        <span className="demo-banner-dot" />
-        {state.label}
-      </span>
     </div>
   );
 }

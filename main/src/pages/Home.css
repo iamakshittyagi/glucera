@@ -51,7 +51,7 @@ body { background: #f0eaeb; }
   z-index: 2;
   /* Top padding clears the overlaid header (74px) so the copy can never slide
      under it on short viewports, even though it is vertically centred. */
-  padding: 94px 52px 0;
+  padding: 94px clamp(22px, 5vw, 52px) 0;
   max-width: 640px;
   flex: 1;
   display: flex;
@@ -132,7 +132,7 @@ body { background: #f0eaeb; }
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
-  padding: 0 20px 20px;
+  padding: 0 clamp(12px, 3vw, 20px) clamp(12px, 3vw, 20px);
   margin-top: auto;
 }
 
@@ -177,36 +177,57 @@ body { background: #f0eaeb; }
    RESPONSIVE
 ═══════════════════════════════════════ */
 
-/* ── Laptop (≤ 1024px) ── */
+/* ── Laptop ── */
 @media (max-width: 1024px) {
-  .hero-features {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-/* ── Tablet (≤ 900px) ── */
-@media (max-width: 900px) {
   .hero-features { grid-template-columns: repeat(2, 1fr); }
 }
 
-/* ── Mobile (≤ 600px) ── */
+/* ── Tablet ── */
+@media (max-width: 900px) {
+  .hero-features { grid-template-columns: repeat(2, 1fr); }
+  .hero-sub { max-width: 520px; }
+}
+
+/* ── Mobile ── */
 @media (max-width: 600px) {
   .hero { min-height: 100dvh; }
-
   .hero-content { padding: 84px 22px 0; }   /* clears the 66px mobile header */
-
   .hero-features {
     grid-template-columns: 1fr 1fr;
     gap: 8px;
-    padding: 0 12px 12px;
   }
+  .hero-feature-card { padding: 12px 13px; gap: 9px; border-radius: 12px; }
+  .hero-feature-icon { width: 28px; height: 28px; }
+  .hero-feature-title { font-size: 0.72rem; }
+  .hero-feature-desc { font-size: 0.64rem; }
+  .hero-disclaimer { margin-top: 16px; font-size: 0.64rem; }
+  .btn-primary, .btn-outline { font-size: 0.86rem; padding: 12px 22px; }
 }
 
-/* ── Small mobile (≤ 420px) ── */
+/* ── Small mobile ── */
 @media (max-width: 420px) {
   .hero-features { grid-template-columns: 1fr; }
-
-  .hero-buttons { flex-direction: column; }
+  .hero-buttons { flex-direction: column; align-items: stretch; }
   .btn-primary,
   .btn-outline { text-align: center; }
+  /* Only the two most important cards survive — the rest would push the
+     buttons off a small screen. */
+  .hero-feature-card:nth-child(n + 3) { display: none; }
+}
+
+/* ── Short viewports and landscape phones ──
+   100dvh minus a landscape phone's ~380px leaves no room for four cards,
+   so the hero drops to copy only and lets the page scroll naturally. */
+@media (max-height: 620px) and (orientation: landscape) {
+  .hero { min-height: 520px; }
+  .hero-content { padding-top: 78px; padding-bottom: 20px; }
+  .hero-heading { font-size: clamp(1.5rem, 5vw, 2.2rem); margin-bottom: 10px; }
+  .hero-sub { font-size: 0.82rem; line-height: 1.5; margin-bottom: 16px; }
+  .hero-disclaimer { display: none; }
+  .hero-features { display: none; }
+}
+
+@media (max-height: 700px) and (orientation: portrait) {
+  .hero-feature-card { padding: 10px 12px; }
+  .hero-feature-desc { display: none; }
 }

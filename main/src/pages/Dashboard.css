@@ -6,7 +6,7 @@
 }
 
 .dash-container {
-  padding: 16px 20px 32px;
+  padding: 16px clamp(12px, 2.5vw, 20px) 32px;
   max-width: 1400px;
   margin: 0 auto;
 }
@@ -16,7 +16,7 @@
   border: 2.5px dashed #c4a8ac;
   border-radius: 24px;
   background: #fff;
-  padding: 80px 40px;
+  padding: clamp(36px, 8vw, 80px) clamp(16px, 4vw, 40px);
   text-align: center;
   cursor: pointer;
   transition: border-color 0.2s, background 0.2s;
@@ -609,23 +609,6 @@
   font-weight: 700;
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 1024px) {
-  .dash-grid {
-    grid-template-columns: 1fr;
-  }
-  .dash-center {
-    order: -1;
-    position: static;
-    padding: 20px 0;
-  }
-}
-
-@media (max-width: 600px) {
-  .dash-container { padding: 10px 12px 24px; }
-  .stats-row { grid-template-columns: 1fr 1fr; }
-  .context-grid { grid-template-columns: 1fr; }
-}
 
 .risk-accuracy {
   font-size: 0.88rem;
@@ -633,7 +616,6 @@
   margin-bottom: 8px;
 }
 
-/* ── AI accuracy line ── */
 .risk-accuracy {
   font-size: 0.88rem;
   margin-top: 2px;
@@ -783,10 +765,18 @@
   margin-bottom: 20px;
 }
 
+/* The popup body scrolls on short screens, so the actions stick to the bottom
+   of it. In an emergency the SOS button must never be below the fold. */
 .popup-actions {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
+  position: sticky;
+  bottom: -26px;
+  margin: 0 -30px -26px;
+  padding: 14px 30px 18px;
+  background: linear-gradient(to bottom, rgba(255,255,255,0.85), #fff 42%);
+  border-radius: 0 0 26px 26px;
 }
 
 .popup-btn-dismiss,
@@ -908,19 +898,107 @@
   50%      { opacity: 0.45; }
 }
 
-/* ── RESPONSIVE ── */
-@media (max-width: 980px) {
-  .dash-grid { grid-template-columns: 1fr; }
-  .dash-center { position: static; padding: 8px 0 4px; }
+
+
+/* ═══════════════════════════════════════════════════════════════
+   RESPONSIVE LADDER
+   3-col desktop → 2-col tablet → single column phone.
+═══════════════════════════════════════════════════════════════ */
+
+/* ── Small laptop ── */
+@media (max-width: 1180px) {
+  .dash-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+  /* The SOS column can't sit in a 2-col grid without stranding a cell,
+     so it moves to a full-width band above the cards. */
+  .dash-center {
+    grid-column: 1 / -1;
+    order: -1;
+    position: static;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 18px;
+    padding: 6px 0 10px;
+  }
+  .sos-btn { width: 128px; height: 128px; font-size: 1.6rem; }
+  .sos-label { width: 100%; text-align: center; }
+  .sos-sub { max-width: 220px; text-align: left; }
 }
 
-@media (max-width: 600px) {
-  .popup-box { padding: 26px 20px 20px; border-radius: 22px; }
-  .popup-title { font-size: 1.12rem; }
-  .popup-stat-val { font-size: 1.25rem; }
-  .popup-actions { flex-direction: column; }
-  .demo-picker-row { grid-template-columns: 1fr; }
-  .dash-topbar { flex-direction: column; align-items: stretch; gap: 10px; border-radius: 20px; }
+/* ── Tablet ── */
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: 1fr; gap: 12px; }
+  .stats-row { grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .clinical-bar { flex-wrap: wrap; gap: 12px; }
+  .clinical-track { order: 3; flex-basis: 100%; }
+  .context-toggle { margin-left: auto; }
+}
+
+/* ── Large phone ── */
+@media (max-width: 700px) {
+  .card { padding: 18px; border-radius: 16px; }
+  .stats-row { grid-template-columns: 1fr 1fr; }
+  .context-grid { grid-template-columns: 1fr 1fr; }
+  .risk-badge { font-size: 1.05rem; padding: 10px 20px; }
+  .dash-topbar { flex-direction: column; align-items: stretch; gap: 10px; border-radius: 18px; padding: 12px 16px; }
   .dash-topbar-actions { justify-content: flex-start; }
   .dash-file-name { max-width: 100%; }
+  .demo-picker-row { grid-template-columns: 1fr; }
+}
+
+/* ── Phone ── */
+@media (max-width: 560px) {
+  .dash-container { padding: 8px 12px 24px; }
+  .upload-zone { border-radius: 18px; }
+  .upload-title { font-size: clamp(1.15rem, 5.5vw, 1.5rem); }
+  .upload-sub { font-size: 0.85rem; margin-bottom: 20px; }
+  .upload-hint { font-size: 0.68rem; line-height: 1.5; }
+  .upload-icon img { width: 68px !important; height: 68px !important; }
+
+  .context-grid { grid-template-columns: 1fr; }
+  .sos-btn { width: 112px; height: 112px; font-size: 1.4rem; }
+  .dash-center { gap: 12px; }
+
+  .popup-box { padding: 24px 18px 18px; border-radius: 20px; }
+  .popup-title { font-size: 1.05rem; }
+  .popup-stat-val { font-size: 1.2rem; }
+  .popup-stat { padding: 10px 6px; }
+  .popup-suggestion { font-size: 0.8rem; padding: 12px; }
+  .popup-actions { flex-direction: column; }
+  .popup-btn-dismiss, .popup-btn-sos { flex: 1 1 auto; width: 100%; }
+
+  .clinical-score-val { font-size: 1.4rem; }
+  .explain-item { font-size: 0.8rem; }
+  .food-text { font-size: 0.86rem; }
+}
+
+/* ── Small phone ── */
+@media (max-width: 380px) {
+  .stats-row { grid-template-columns: 1fr; }
+  .risk-badge { font-size: 0.95rem; letter-spacing: 0.5px; }
+  .dash-demo-switch { flex: 1 1 100%; text-align: center; }
+}
+
+/* ── Short / landscape phones: the popup must stay usable ── */
+@media (max-height: 620px) {
+  .popup-overlay { align-items: flex-start; padding: 10px; }
+  .popup-box { max-height: calc(100dvh - 20px); padding: 18px 20px 14px; }
+  .popup-actions { margin: 0 -20px -14px; padding: 12px 20px 14px; }
+  .popup-icon-ring { width: 40px; height: 40px; margin-bottom: 8px; }
+  .popup-icon { font-size: 1.3rem; }
+  .popup-title { font-size: 1rem; margin-bottom: 12px; }
+  .popup-stats { margin-bottom: 12px; gap: 8px; }
+  .popup-stat { padding: 8px 6px; }
+  .popup-stat-val { font-size: 1.1rem; }
+  .popup-suggestion { margin-bottom: 12px; padding: 10px 12px; font-size: 0.76rem; }
+  /* The ring is decorative — the countdown label carries the same information. */
+  .popup-countdown-wrap { display: none; }
+  .popup-countdown-label { margin-bottom: 12px; font-size: 0.72rem; }
+}
+
+@media (max-width: 380px) {
+  .popup-box { padding: 20px 16px 14px; }
+  .popup-actions { margin: 0 -16px -14px; padding: 12px 16px 14px; }
 }

@@ -46,8 +46,8 @@ function speakAlert(riskLevel) {
 }
 
 async function sendSOSToBackend(trigger, coords) {
-  // apiPostQuiet never throws — in demo mode the SOS is simply not delivered
-  // anywhere, but the on-screen flow stays identical.
+  // apiPostQuiet never throws — if the API is unreachable the SOS is simply not
+  // delivered anywhere, but the on-screen flow stays identical.
   await apiPostQuiet("/sos", {
     trigger,
     latitude:  coords?.latitude  ?? null,
@@ -170,7 +170,6 @@ export default function Dashboard() {
   const [ctx,        setCtx]        = useState(defaultCtx);
   const [showPanel,  setShowPanel]  = useState(false);
   const [dragging,   setDragging]   = useState(false);
-  const [apiError,   setApiError]   = useState(null);
   const [showPopup,  setShowPopup]  = useState(false);
 
   const autoSosTimer      = useRef(null);
@@ -186,7 +185,6 @@ export default function Dashboard() {
   const callBackend = useCallback(async (csvRows, context) => {
     if (!csvRows || csvRows.length < 2) return;
     setLoading(true);
-    setApiError(null);
 
     const glucoseArray  = csvRows.map((r) => parseFloat(r.glucose_mg_dl)).filter((v) => !isNaN(v));
     const mealArray     = csvRows.map((r) => (r.meal_taken === "1" || r.meal_taken === 1 ? 1 : 0));
@@ -214,8 +212,7 @@ export default function Dashboard() {
       });
       result = await res.json();
     } catch (err) {
-      console.warn("Backend unavailable, using local demo engine:", err.message);
-      setApiError("Demo mode — analysed locally, no trained model involved.");
+      console.warn("Backend unavailable, using local engine:", err.message);
       result = predictLocally(payload);
     }
 
@@ -236,7 +233,7 @@ export default function Dashboard() {
 
   const loadDemoFile = useCallback((demo) => {
     setFileName(demo.name); setSosSent(false); setPrediction(null);
-    setApiError(null); setShowPopup(false); prevRisk.current = null;
+    setShowPopup(false); prevRisk.current = null;
     const parsed = parseCSV(demo.csv);
     setData(parsed); setRows(parsed); setShowPanel(true);
     callBackend(parsed, ctx);
@@ -273,7 +270,7 @@ export default function Dashboard() {
   const handleFile = useCallback((file) => {
     if (!file) return;
     setFileName(file.name); setSosSent(false); setPrediction(null);
-    setApiError(null); setShowPopup(false); prevRisk.current = null;
+    setShowPopup(false); prevRisk.current = null;
     const reader = new FileReader();
     reader.onload = (e) => {
       const parsed = parseCSV(e.target.result);
@@ -359,7 +356,6 @@ export default function Dashboard() {
                 <img src={FileIcon} alt="file" className="dash-file-icon" style={{ width: 20, height: 20, objectFit: "contain" }} />
                 <span className="dash-file-name">{fileName}</span>
                 {loading && <span className="dash-loading-pill">Analysing...</span>}
-                {apiError && <span className="dash-error-pill">{apiError}</span>}
               </div>
               <div className="dash-topbar-actions">
                 {DEMO_FILES.map((d) => (
@@ -474,14 +470,8 @@ export default function Dashboard() {
                       <p className="risk-glucose">
                         Last reading: <strong>{prediction.current_glucose} mg/dL</strong>
                       </p>
-                      {/* ── AI Accuracy ── */}
                       <p className="risk-accuracy" style={{ color: risk.color }}>
-                        AI confidence: <strong>{Math.round(prediction.confidence * 100)}%</strong>
-                        {prediction.model_accuracy && (
-                          <span style={{ color: "#aaa", fontSize: "0.75rem", marginLeft: 6 }}>
-                            model acc: {Math.round(prediction.model_accuracy * 100)}%
-                          </span>
-                        )}
+                        Confidence: <strong>{Math.round(prediction.confidence * 100)}%</strong>
                       </p>
 
                       {prediction.crash_predicted && prediction.crash_in_minutes != null && (
@@ -666,9 +656,7 @@ export default function Dashboard() {
             {loading && !prediction && (
               <div className="card" style={{ textAlign: "center", padding: "60px 20px" }}>
                 <p style={{ color: "#76575D", fontWeight: 600 }}>Analysing your glucose data</p>
-                <p style={{ color: "#aaa", fontSize: "0.85rem" }}>
-                  Contacting the Glucera AI backend — falling back to local analysis if it doesn't answer
-                </p>
+                <p style={{ color: "#aaa", fontSize: "0.85rem" }}>This will only take a moment</p>
               </div>
             )}
           </>

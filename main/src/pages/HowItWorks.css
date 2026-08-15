@@ -6,7 +6,7 @@
 }
 
 .hiw-container {
-  padding: 16px 24px 60px;
+  padding: 16px clamp(14px, 4vw, 24px) 60px;
   max-width: 900px;
   margin: 0 auto;
 }
@@ -118,12 +118,6 @@
   color: #777;
   line-height: 1.6;
 }
-.hiw-step-icon-img {
-  width: 40px;
-  height: 40px;
-  object-fit: contain;
-  margin-bottom: 10px;
-}
 /* ── CALLOUT ── */
 .hiw-callout {
   background: #76575D;
@@ -188,10 +182,6 @@
   line-height: 1.6;
 }
 
-@media (max-width: 600px) {
-  .hiw-container { padding: 12px 16px 40px; }
-  .hiw-callout { flex-direction: column; gap: 12px; }
-}
 .hiw-step-icon-img {
   width: 40px;
   height: 40px;
@@ -209,4 +199,36 @@
   object-fit: contain;
   flex-shrink: 0;
   filter: brightness(0) invert(1);
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .hiw-hero { padding: 32px 0 28px; }
+  .hiw-sub { font-size: 0.92rem; }
+  .hiw-step-right { padding: 18px 20px; }
+}
+
+@media (max-width: 600px) {
+  .hiw-container { padding: 12px 16px 40px; }
+  .hiw-callout { flex-direction: column; gap: 12px; padding: 22px 20px; }
+  .hiw-step-card { gap: 14px; }
+  .hiw-step-left { width: 38px; }
+  .hiw-step-number { width: 38px; height: 38px; font-size: 0.72rem; }
+  .hiw-step-right { padding: 16px 18px; border-radius: 14px; }
+  .hiw-step-title { font-size: 0.92rem; }
+  .hiw-step-desc { font-size: 0.82rem; }
+  .hiw-faq-title { font-size: 1.3rem; }
+  .hiw-faq-card { padding: 18px 18px; border-radius: 14px; }
+  .hiw-faq-q { font-size: 0.88rem; }
+  .hiw-faq-a { font-size: 0.82rem; }
+  .hiw-eyebrow { font-size: 0.66rem; letter-spacing: 2px; }
+}
+
+/* Below this the number rail costs more room than it earns. */
+@media (max-width: 420px) {
+  .hiw-step-card { gap: 10px; }
+  .hiw-step-left { width: 30px; }
+  .hiw-step-number { width: 30px; height: 30px; font-size: 0.62rem; }
+  .hiw-step-icon, .hiw-step-icon-img { width: 34px; height: 34px; }
+  .hiw-callout-icon-img { width: 38px; height: 38px; }
 }

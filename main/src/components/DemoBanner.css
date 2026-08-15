@@ -1,100 +1,21 @@
+/* A single quiet line. No status pill, no indicator dots. */
 .demo-banner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin: 0 16px 12px;
-  padding: 10px 18px;
+  margin: 0 clamp(12px, 3vw, 28px) 12px;
+  padding: 9px 16px;
   background: #fff8e8;
   border: 1px solid #f0dcae;
-  border-radius: 16px;
+  border-radius: 12px;
   font-family: 'Aldrich', sans-serif;
 }
 
-.demo-banner-tag {
-  flex-shrink: 0;
-  background: #b8860b;
-  color: #fff;
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  padding: 4px 10px;
-  border-radius: 50px;
-}
-
 .demo-banner-text {
-  flex: 1;
-  min-width: 220px;
   margin: 0;
-  font-size: 0.78rem;
+  font-size: clamp(0.68rem, 1.6vw, 0.76rem);
   color: #7a6023;
-  line-height: 1.45;
+  line-height: 1.5;
+  text-align: center;
 }
 
 .demo-banner-text strong {
   color: #5e4409;
-}
-
-.demo-banner-pill {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 0.72rem;
-  padding: 6px 14px;
-  border-radius: 50px;
-  border: 1px solid transparent;
-  white-space: nowrap;
-}
-
-.demo-banner-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
-.demo-banner-pill.checking {
-  background: #f3f0ec;
-  border-color: #ded6cc;
-  color: #7d7268;
-}
-.demo-banner-pill.checking .demo-banner-dot {
-  background: #a89b8e;
-  animation: demo-pulse 1.2s ease-in-out infinite;
-}
-
-/* Plain text — no status dot, no coloured fill. */
-.demo-banner-pill.live {
-  background: transparent;
-  border-color: transparent;
-  color: #7a6023;
-  padding-left: 0;
-  padding-right: 0;
-}
-.demo-banner-pill.live .demo-banner-dot {
-  display: none;
-}
-
-.demo-banner-pill.demo {
-  background: #f0f6ff;
-  border-color: #bcd4f0;
-  color: #2471a3;
-}
-.demo-banner-pill.demo .demo-banner-dot {
-  background: #2980b9;
-}
-
-@keyframes demo-pulse {
-  0%, 100% { opacity: 1; }
-  50%      { opacity: 0.3; }
-}
-
-@media (max-width: 600px) {
-  .demo-banner {
-    margin: 0 10px 10px;
-    padding: 10px 14px;
-    gap: 8px;
-  }
-  .demo-banner-text { font-size: 0.72rem; }
-  .demo-banner-pill { font-size: 0.66rem; padding: 5px 11px; }
 }

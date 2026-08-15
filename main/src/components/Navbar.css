@@ -268,6 +268,15 @@
 /* ═══════════════════════════════════════
    RESPONSIVE
 ═══════════════════════════════════════ */
+/* Five links plus a CTA get tight before the burger breakpoint — tighten the
+   link padding first rather than letting them collide with the logo. */
+@media (max-width: 1120px) {
+  .gl-nav { gap: 14px; padding: 0 20px; }
+  .gl-nav-link { padding: 9px 11px; font-size: 0.78rem; }
+  .gl-nav-link::after { left: 11px; right: 11px; }
+  .gl-nav-cta { padding: 10px 17px; font-size: 0.76rem; }
+}
+
 @media (max-width: 940px) {
   .gl-nav { gap: 12px; padding: 0 18px; }
   .gl-nav-links { display: none; }
@@ -279,4 +288,18 @@
   .gl-nav { --nav-h: 66px; padding: 0 14px; }
   .gl-nav-logo-img { height: 38px; }
   .gl-nav-cta { display: none; }  /* the drawer carries the CTA on mobile */
+  .gl-nav-drawer { left: 10px; right: 10px; padding: 10px; }
+  .gl-nav-drawer-link { padding: 12px 14px; font-size: 0.85rem; }
+}
+
+/* Landscape phones: shrink the bar so it doesn't eat the viewport, and cap the
+   drawer height so a 5-item menu stays scrollable instead of overflowing. */
+@media (max-height: 480px) {
+  .gl-nav { --nav-h: 56px; }
+  .gl-nav-logo-img { height: 32px; }
+  .gl-nav-drawer {
+    max-height: calc(100dvh - 68px);
+    overflow-y: auto;
+  }
+  .gl-nav-drawer-link { padding: 10px 14px; }
 }

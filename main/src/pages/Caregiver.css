@@ -1,0 +1,99 @@
+/* The caregiver screen is the one most likely to be opened on a phone at 3am,
+   so every size here is fluid rather than fixed. */
+
+.cg-page {
+  font-family: 'Aldrich', sans-serif;
+  background: #f0eaeb;
+  min-height: 100dvh;
+}
+
+.cg-container {
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 12px clamp(14px, 4vw, 20px) 32px;
+}
+
+/* ── STATUS CARD ── */
+.cg-status-card {
+  border: 2px solid;
+  border-radius: clamp(18px, 4vw, 24px);
+  padding: clamp(26px, 7vw, 40px) clamp(18px, 5vw, 32px);
+  text-align: center;
+  margin-bottom: 20px;
+  transition: background 0.4s ease, border-color 0.4s ease;
+}
+
+.cg-status-label {
+  font-size: clamp(1.25rem, 6vw, 1.75rem);
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0 0 8px;
+}
+
+.cg-glucose {
+  font-size: clamp(2rem, 11vw, 2.5rem);
+  font-weight: 800;
+  line-height: 1.1;
+  margin: 16px 0 4px;
+}
+
+.cg-glucose span {
+  font-size: clamp(0.8rem, 3.5vw, 1rem);
+  color: #aaa;
+}
+
+.cg-message {
+  background: #fff;
+  border-radius: 12px;
+  padding: clamp(12px, 3.5vw, 16px);
+  margin-top: 16px;
+  border: 1px solid;
+}
+
+.cg-message-text {
+  font-weight: 600;
+  font-size: clamp(0.78rem, 3.2vw, 0.88rem);
+  line-height: 1.5;
+  margin: 0;
+}
+
+.cg-message-time {
+  color: #aaa;
+  font-size: clamp(0.68rem, 2.8vw, 0.75rem);
+  margin: 4px 0 0;
+}
+
+.cg-safe-btn {
+  margin-top: 20px;
+  width: 100%;
+  max-width: 280px;
+  background: #27ae60;
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  padding: 14px 28px;
+  font-size: clamp(0.86rem, 3.6vw, 0.95rem);
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.2s;
+}
+
+.cg-safe-btn:hover {
+  background: #219a52;
+  transform: translateY(-1px);
+}
+
+.cg-hint {
+  text-align: center;
+  color: #aaa;
+  font-size: clamp(0.66rem, 2.8vw, 0.75rem);
+  line-height: 1.6;
+  margin-top: 16px;
+}
+
+/* On a short landscape phone the card alone would fill the screen. */
+@media (max-height: 560px) and (orientation: landscape) {
+  .cg-status-card { padding: 18px 20px; margin-bottom: 12px; }
+  .cg-glucose { font-size: 1.7rem; margin: 8px 0 2px; }
+  .cg-status-label { font-size: 1.1rem; }
+}

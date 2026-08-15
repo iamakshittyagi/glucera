@@ -10,6 +10,10 @@ body {
   padding: 0;
   background: #f0eaeb;
   font-family: var(--font-main);
+  /* Nothing on this site is meant to scroll sideways. Any element that needs to
+     (the history table) gets its own scroll container instead. */
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
 }
 
 /* Catch every element, including form controls, which don't inherit by default. */
@@ -21,4 +25,37 @@ input,
 select,
 textarea {
   font-family: var(--font-main);
+}
+
+/* Media and embeds must never force the page wider than the viewport. */
+img,
+svg,
+video,
+canvas {
+  max-width: 100%;
+}
+
+/* Long words and URLs shouldn't blow out narrow columns. */
+h1, h2, h3, p, li, td, th, span {
+  overflow-wrap: break-word;
+}
+
+/* Tap targets on touch devices. */
+@media (pointer: coarse) {
+  button,
+  a[class*="btn"],
+  a[class*="cta"] {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
